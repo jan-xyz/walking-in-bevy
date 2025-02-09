@@ -1,15 +1,24 @@
 use avian3d::prelude::*;
 use bevy::{pbr::DirectionalLightShadowMap, prelude::*};
-
 use bevy_tnua::prelude::*;
 use bevy_tnua_avian3d::*;
+use iyes_perf_ui::prelude::*;
 
 fn main() {
     App::new()
         .insert_resource(DirectionalLightShadowMap { size: 4096 })
         .add_plugins((
             DefaultPlugins,
+            // framerate pacing
+            bevy_framepace::FramepacePlugin,
+            // performance diagnostics
+            bevy::diagnostic::FrameTimeDiagnosticsPlugin,
+            bevy::diagnostic::EntityCountDiagnosticsPlugin,
+            bevy::diagnostic::SystemInformationDiagnosticsPlugin,
+            PerfUiPlugin,
+            // pysics library
             PhysicsPlugins::default(),
+            // character controller
             TnuaControllerPlugin::new(FixedUpdate),
             TnuaAvian3dPlugin::new(FixedUpdate),
         ))
@@ -70,6 +79,9 @@ fn setup(
     ));
 
     commands.spawn((PointLight::default(), Transform::from_xyz(5., 5., 5.)));
+
+    // show performance UI
+    commands.spawn(PerfUiDefaultEntries::default());
 }
 
 // Movement System
