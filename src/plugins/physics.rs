@@ -11,8 +11,8 @@ impl Plugin for PhysicsPlugin {
             // Physics library
             PhysicsPlugins::default(),
             // Character controller
-            TnuaControllerPlugin::new(FixedUpdate),
-            TnuaAvian3dPlugin::new(FixedUpdate),
+            TnuaControllerPlugin::default(),
+            TnuaAvian3dPlugin::default(),
         ));
     }
 }

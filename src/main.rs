@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use iyes_perf_ui::prelude::*;
+// use iyes_perf_ui::prelude::*;
 
 mod plugins;
 use plugins::GamePlugins;
@@ -11,10 +11,10 @@ fn main() {
             // framerate pacing
             bevy_framepace::FramepacePlugin,
             // performance diagnostics
-            bevy::diagnostic::FrameTimeDiagnosticsPlugin,
+            bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
             bevy::diagnostic::EntityCountDiagnosticsPlugin,
             bevy::diagnostic::SystemInformationDiagnosticsPlugin,
-            PerfUiPlugin,
+            // PerfUiPlugin,
             // Game plugins
             GamePlugins,
         ))
