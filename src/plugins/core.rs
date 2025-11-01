@@ -1,6 +1,6 @@
 use avian3d::prelude::*;
 use bevy::{pbr::DirectionalLightShadowMap, prelude::*};
-// use iyes_perf_ui::prelude::*;
+use iyes_perf_ui::prelude::*;
 
 pub struct CorePlugin;
 
@@ -43,5 +43,5 @@ fn setup(
     ));
 
     // show performance UI
-    // commands.spawn(PerfUiDefaultEntries::default());
+    commands.spawn(PerfUiRoot::default());
 }
