@@ -9,7 +9,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player).add_systems(
             FixedUpdate,
-            apply_controls.in_set(TnuaUserControlsSystemSet),
+            apply_controls.in_set(TnuaUserControlsSystems),
         );
     }
 }

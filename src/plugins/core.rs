@@ -43,5 +43,5 @@ fn setup(
     ));
 
     // show performance UI
-    commands.spawn(PerfUiDefaultEntries::default());
+    commands.spawn(PerfUiRoot::default());
 }

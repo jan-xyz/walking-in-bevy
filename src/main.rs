@@ -11,7 +11,7 @@ fn main() {
             // framerate pacing
             bevy_framepace::FramepacePlugin,
             // performance diagnostics
-            bevy::diagnostic::FrameTimeDiagnosticsPlugin,
+            bevy::diagnostic::FrameTimeDiagnosticsPlugin::default(),
             bevy::diagnostic::EntityCountDiagnosticsPlugin,
             bevy::diagnostic::SystemInformationDiagnosticsPlugin,
             PerfUiPlugin,
