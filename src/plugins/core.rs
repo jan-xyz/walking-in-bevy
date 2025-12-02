@@ -1,13 +1,11 @@
 use avian3d::prelude::*;
-use bevy::{pbr::DirectionalLightShadowMap, prelude::*};
-use iyes_perf_ui::prelude::*;
+use bevy::prelude::*;
 
 pub struct CorePlugin;
 
 impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(DirectionalLightShadowMap { size: 4096 })
-            .add_systems(Startup, setup);
+        app.add_systems(Startup, setup);
     }
 }
 
@@ -41,7 +39,4 @@ fn setup(
         Transform::from_xyz(5., 5., 5.),
         Name::new("Point Light"),
     ));
-
-    // show performance UI
-    commands.spawn(PerfUiRoot::default());
 }
