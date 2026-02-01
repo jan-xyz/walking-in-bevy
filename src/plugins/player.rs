@@ -15,6 +15,9 @@ impl Plugin for PlayerPlugin {
     }
 }
 
+#[derive(Component)]
+pub struct Player;
+
 #[derive(TnuaScheme)]
 #[scheme(basis = TnuaBuiltinWalk)]
 pub enum PlayerControlScheme {
@@ -62,6 +65,7 @@ fn spawn_player(
         // By locking the rotation we can prevent this.
         LockedAxes::ROTATION_LOCKED,
         Name::new("Player"),
+        Player,
     ));
 }
 
