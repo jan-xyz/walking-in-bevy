@@ -28,6 +28,7 @@ fn spawn_player(
 ) {
     // Add a physics body using Avian 3D
     commands.spawn((
+        TransformInterpolation,
         SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("export.glb"))),
         Transform::from_xyz(0., 2., 0.),
         // The player character needs to be configured as a dynamic rigid body of the physics
