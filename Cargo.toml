@@ -4,12 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bevy = "0.17"
-bevy-tnua-avian3d = "0.8"
-avian3d = "0.4"
-bevy-tnua = "0.26"
-iyes_perf_ui = { git = "https://github.com/IyesGames/iyes_perf_ui", branch = "main" }
-bevy_framepace = "0.20"
+bevy = "0.18"
+bevy-tnua-avian3d = "0.10"
+avian3d = "0.5"
+bevy-tnua = "0.30"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

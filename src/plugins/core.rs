@@ -1,6 +1,5 @@
 use avian3d::prelude::*;
-use bevy::{pbr::DirectionalLightShadowMap, prelude::*};
-use iyes_perf_ui::prelude::*;
+use bevy::{light::DirectionalLightShadowMap, prelude::*};
 
 pub struct CorePlugin;
 
@@ -41,7 +40,4 @@ fn setup(
         Transform::from_xyz(5., 5., 5.),
         Name::new("Point Light"),
     ));
-
-    // show performance UI
-    commands.spawn(PerfUiRoot::default());
 }

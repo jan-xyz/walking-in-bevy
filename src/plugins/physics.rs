@@ -1,6 +1,7 @@
+use crate::plugins::player::PlayerControlScheme;
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use bevy_tnua::prelude::*;
+use bevy_tnua::TnuaControllerPlugin;
 use bevy_tnua_avian3d::*;
 
 pub struct PhysicsPlugin;
@@ -11,8 +12,8 @@ impl Plugin for PhysicsPlugin {
             // Physics library
             PhysicsPlugins::default(),
             // Character controller
-            TnuaControllerPlugin::default(),
-            TnuaAvian3dPlugin::default(),
+            TnuaControllerPlugin::<PlayerControlScheme>::new(FixedUpdate),
+            TnuaAvian3dPlugin::new(FixedUpdate),
         ));
     }
 }
