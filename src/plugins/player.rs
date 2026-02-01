@@ -71,27 +71,30 @@ fn spawn_player(
 
 // Movement System
 fn apply_controls(
+    time: Res<Time>,
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut query: Query<&mut TnuaController<PlayerControlScheme>>,
+    mut query: Query<(&mut TnuaController<PlayerControlScheme>, &mut Transform), With<Player>>,
 ) {
-    let Ok(mut controller) = query.single_mut() else {
+    let Ok((mut controller, mut transform)) = query.single_mut() else {
         return;
     };
     controller.initiate_action_feeding();
 
+    let forward = transform.forward();
     let mut direction = Vec3::ZERO;
+    let rotation_speed = 2.0;
 
     if keyboard.pressed(KeyCode::ArrowUp) {
-        direction -= Vec3::Z;
+        direction += *forward;
     }
     if keyboard.pressed(KeyCode::ArrowDown) {
-        direction += Vec3::Z;
+        direction -= *forward;
     }
     if keyboard.pressed(KeyCode::ArrowLeft) {
-        direction -= Vec3::X;
+        transform.rotate_y(rotation_speed * time.delta_secs());
     }
     if keyboard.pressed(KeyCode::ArrowRight) {
-        direction += Vec3::X;
+        transform.rotate_y(-rotation_speed * time.delta_secs());
     }
 
     // Feed the basis every frame. Even if the player doesn't move - just use `desired_velocity:

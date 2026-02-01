@@ -31,9 +31,19 @@ fn follow_player(
     let Ok(mut cam_transform) = camera.single_mut() else {
         return;
     };
+    let distance = 30.0;
+    let height = 10.0;
+    // higher = snappier; lower = smoother
+    let smoothing = 20.0;
 
-    let offset = Vec3::new(0., 5., 10.);
-    let target = player_transform.translation + offset;
-    let t = time.delta_secs() * 30.;
-    cam_transform.translation = cam_transform.translation.lerp(target, t);
+    let target_translation =
+        player_transform.translation + *player_transform.back() * distance + Vec3::Y * height;
+
+    let target_rotation = Transform::from_translation(cam_transform.translation)
+        .looking_at(player_transform.translation, Vec3::Y)
+        .rotation;
+
+    let t = time.delta_secs() * smoothing;
+    cam_transform.translation = cam_transform.translation.lerp(target_translation, t);
+    cam_transform.rotation = cam_transform.rotation.slerp(target_rotation, t)
 }
