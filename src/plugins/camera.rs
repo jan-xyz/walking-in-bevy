@@ -33,8 +33,6 @@ fn follow_player(
     };
     let distance = 30.0;
     let height = 10.0;
-    // higher = snappier; lower = smoother
-    let smoothing = 20.0;
 
     let target_translation =
         player_transform.translation + *player_transform.back() * distance + Vec3::Y * height;
@@ -43,6 +41,10 @@ fn follow_player(
         .looking_at(player_transform.translation, Vec3::Y)
         .rotation;
 
+    // lerp and slerp smoothen the movement of the camera by interpolating and moving toward the
+    // desired location instead of snapping.
+    // higher = snappier; lower = smoother
+    let smoothing = 20.0;
     let t = time.delta_secs() * smoothing;
     cam_transform.translation = cam_transform.translation.lerp(target_translation, t);
     cam_transform.rotation = cam_transform.rotation.slerp(target_rotation, t)

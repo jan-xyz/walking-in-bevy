@@ -16,6 +16,7 @@ pub enum PlayerAction {
     TurnLeft,
     TurnRight,
     Jump,
+    SwapModel,
 }
 
 pub fn default_player_input_map() -> InputMap<PlayerAction> {
@@ -32,5 +33,6 @@ pub fn default_player_input_map() -> InputMap<PlayerAction> {
         (PlayerAction::TurnRight, KeyCode::KeyD),
         // Actions
         (PlayerAction::Jump, KeyCode::Space),
+        (PlayerAction::SwapModel, KeyCode::Tab),
     ])
 }

@@ -1,10 +1,11 @@
+mod model;
+
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_tnua::{
     builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig},
     prelude::*,
 };
-use bevy_tnua_avian3d::*;
 use leafwing_input_manager::prelude::ActionState;
 
 use crate::plugins::input::{default_player_input_map, PlayerAction};
@@ -13,8 +14,9 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player)
-            .add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
+        app.add_systems(Startup, spawn_player);
+        app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
+        app.add_systems(Update, swap_player_model);
     }
 }
 
@@ -30,47 +32,60 @@ pub enum PlayerControlScheme {
 fn spawn_player(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
     mut control_scheme_configs: ResMut<Assets<PlayerControlSchemeConfig>>,
 ) {
     // Add a physics body using Avian 3D
-    commands.spawn((
-        TransformInterpolation,
-        SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("export.glb"))),
-        Transform::from_xyz(0., 2., 0.),
-        // The player character needs to be configured as a dynamic rigid body of the physics
-        // engine.
-        RigidBody::Dynamic,
-        ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
-        // This is Tnua's interface component.
-        TnuaController::<PlayerControlScheme>::default(),
-        // A sensor shape is not strictly necessary, but without it we'll get weird results.
-        TnuaAvian3dSensorShape(Collider::cylinder(0.49, 0.0)),
-        // The configuration asset can be loaded from a file, but here we are creating it by code
-        // and injecting it to the assets resource.
-        TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(PlayerControlSchemeConfig {
-            basis: TnuaBuiltinWalkConfig {
-                // The `float_height` must be greater (even if by little) from the distance between
-                // the character's center and the lowest point of its collider.
-                float_height: 1.5,
-                // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they
-                // have sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn
-                // what they do.
-                ..Default::default()
-            },
-            jump: TnuaBuiltinJumpConfig {
-                // The height is the only mandatory field of the jump action.
-                height: 4.0,
-                // `TnuaBuiltinJump` also has customization fields with sensible defaults.
-                ..Default::default()
-            },
-        })),
-        // Tnua can fix the rotation, but the character will still get rotated before it can do so.
-        // By locking the rotation we can prevent this.
-        LockedAxes::ROTATION_LOCKED,
-        Name::new("Player"),
-        Player,
-        default_player_input_map(),
-    ));
+    commands
+        .spawn((
+            TransformInterpolation,
+            Transform::from_xyz(0., 2., 0.),
+            // The player character needs to be configured as a dynamic rigid body of the physics
+            // engine.
+            RigidBody::Dynamic,
+            // This is Tnua's interface component.
+            TnuaController::<PlayerControlScheme>::default(),
+            // The configuration asset can be loaded from a file, but here we are creating it by code
+            // and injecting it to the assets resource.
+            TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(
+                PlayerControlSchemeConfig {
+                    basis: TnuaBuiltinWalkConfig {
+                        // The `float_height` must be greater (even if by little) from the distance between
+                        // the character's center and the lowest point of its collider.
+                        float_height: 1.5,
+                        // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they
+                        // have sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn
+                        // what they do.
+                        ..Default::default()
+                    },
+                    jump: TnuaBuiltinJumpConfig {
+                        // The height is the only mandatory field of the jump action.
+                        height: 4.0,
+                        // `TnuaBuiltinJump` also has customization fields with sensible defaults.
+                        ..Default::default()
+                    },
+                },
+            )),
+            // Tnua can fix the rotation, but the character will still get rotated before it can do so.
+            // By locking the rotation we can prevent this.
+            LockedAxes::ROTATION_LOCKED,
+            // Adding mass here so there are no problems when swapping models.
+            Mass(1.0),
+            model::CurrentPlayerModel(model::PlayerModelType::Donut),
+            Player,
+            Name::new("Player"),
+            default_player_input_map(),
+        ))
+        .with_children(|parent| {
+            model::spawn_player_model(
+                parent,
+                model::PlayerModelType::Donut,
+                &asset_server,
+                &mut meshes,
+                &mut materials,
+            );
+        });
 }
 
 // Movement System
@@ -122,5 +137,50 @@ fn apply_controls(
     // stops holding the jump button, simply stop feeding the action.
     if action_state.pressed(&PlayerAction::Jump) {
         controller.action(PlayerControlScheme::Jump(Default::default()));
+    }
+}
+
+fn swap_player_model(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    player_query: Query<
+        (
+            Entity,
+            &ActionState<PlayerAction>,
+            &model::CurrentPlayerModel,
+        ),
+        With<Player>,
+    >,
+    model_query: Query<Entity, With<model::PlayerModel>>,
+) {
+    let Ok((player_entity, action_state, current_player_model)) = player_query.single() else {
+        return;
+    };
+
+    if action_state.just_pressed(&PlayerAction::SwapModel) {
+        for model_entity in model_query.iter() {
+            commands.entity(model_entity).despawn();
+        }
+
+        let new_model = match current_player_model.0 {
+            model::PlayerModelType::Donut => model::PlayerModelType::Cube,
+            model::PlayerModelType::Cube => model::PlayerModelType::Donut,
+        };
+
+        commands.entity(player_entity).with_children(|parent| {
+            model::spawn_player_model(
+                parent,
+                new_model,
+                &asset_server,
+                &mut meshes,
+                &mut materials,
+            );
+        });
+
+        commands
+            .entity(player_entity)
+            .insert(model::CurrentPlayerModel(new_model));
     }
 }
