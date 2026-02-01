@@ -5,6 +5,9 @@ use bevy_tnua::{
     prelude::*,
 };
 use bevy_tnua_avian3d::*;
+use leafwing_input_manager::prelude::ActionState;
+
+use crate::plugins::input::{default_player_input_map, PlayerAction};
 
 pub struct PlayerPlugin;
 
@@ -66,16 +69,23 @@ fn spawn_player(
         LockedAxes::ROTATION_LOCKED,
         Name::new("Player"),
         Player,
+        default_player_input_map(),
     ));
 }
 
 // Movement System
 fn apply_controls(
     time: Res<Time>,
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&mut TnuaController<PlayerControlScheme>, &mut Transform), With<Player>>,
+    mut query: Query<
+        (
+            &ActionState<PlayerAction>,
+            &mut TnuaController<PlayerControlScheme>,
+            &mut Transform,
+        ),
+        With<Player>,
+    >,
 ) {
-    let Ok((mut controller, mut transform)) = query.single_mut() else {
+    let Ok((action_state, mut controller, mut transform)) = query.single_mut() else {
         return;
     };
     controller.initiate_action_feeding();
@@ -84,16 +94,16 @@ fn apply_controls(
     let mut direction = Vec3::ZERO;
     let rotation_speed = 2.0;
 
-    if keyboard.pressed(KeyCode::ArrowUp) {
+    if action_state.pressed(&PlayerAction::Forward) {
         direction += *forward;
     }
-    if keyboard.pressed(KeyCode::ArrowDown) {
+    if action_state.pressed(&PlayerAction::Backward) {
         direction -= *forward;
     }
-    if keyboard.pressed(KeyCode::ArrowLeft) {
+    if action_state.pressed(&PlayerAction::TurnLeft) {
         transform.rotate_y(rotation_speed * time.delta_secs());
     }
-    if keyboard.pressed(KeyCode::ArrowRight) {
+    if action_state.pressed(&PlayerAction::TurnRight) {
         transform.rotate_y(-rotation_speed * time.delta_secs());
     }
 
@@ -110,7 +120,7 @@ fn apply_controls(
 
     // Feed the jump action every frame as long as the player holds the jump button. If the player
     // stops holding the jump button, simply stop feeding the action.
-    if keyboard.pressed(KeyCode::Space) {
+    if action_state.pressed(&PlayerAction::Jump) {
         controller.action(PlayerControlScheme::Jump(Default::default()));
     }
 }

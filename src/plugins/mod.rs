@@ -1,5 +1,6 @@
 pub mod camera;
 pub mod core;
+pub mod input;
 pub mod physics;
 pub mod player;
 
@@ -15,5 +16,6 @@ impl PluginGroup for GamePlugins {
             .add(player::PlayerPlugin)
             .add(physics::PhysicsPlugin)
             .add(camera::CameraPlugin)
+            .add(input::InputPlugin)
     }
 }
