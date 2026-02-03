@@ -19,20 +19,28 @@ pub enum PlayerAction {
     SwapModel,
 }
 
-pub fn default_player_input_map() -> InputMap<PlayerAction> {
+pub fn default_player1_input_map() -> InputMap<PlayerAction> {
     InputMap::new([
-        // Arrow-Keys
-        (PlayerAction::Forward, KeyCode::ArrowUp),
-        (PlayerAction::Backward, KeyCode::ArrowDown),
-        (PlayerAction::TurnLeft, KeyCode::ArrowLeft),
-        (PlayerAction::TurnRight, KeyCode::ArrowRight),
-        // WASD
+        // Movement
         (PlayerAction::Forward, KeyCode::KeyW),
         (PlayerAction::Backward, KeyCode::KeyS),
         (PlayerAction::TurnLeft, KeyCode::KeyA),
         (PlayerAction::TurnRight, KeyCode::KeyD),
         // Actions
-        (PlayerAction::Jump, KeyCode::Space),
+        (PlayerAction::Jump, KeyCode::ShiftLeft),
         (PlayerAction::SwapModel, KeyCode::Tab),
+    ])
+}
+
+pub fn default_player2_input_map() -> InputMap<PlayerAction> {
+    InputMap::new([
+        // Movement
+        (PlayerAction::Forward, KeyCode::ArrowUp),
+        (PlayerAction::Backward, KeyCode::ArrowDown),
+        (PlayerAction::TurnLeft, KeyCode::ArrowLeft),
+        (PlayerAction::TurnRight, KeyCode::ArrowRight),
+        // Actions
+        (PlayerAction::Jump, KeyCode::ShiftRight),
+        (PlayerAction::SwapModel, KeyCode::Slash),
     ])
 }
