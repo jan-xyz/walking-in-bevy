@@ -22,7 +22,7 @@ impl Plugin for PlayerPlugin {
                 apply_controls_2.in_set(TnuaUserControlsSystems),
             ),
         );
-        app.add_systems(Update, swap_player_model);
+        app.add_systems(Update, (swap_player_model1, swap_player_model2));
     }
 }
 
@@ -97,6 +97,7 @@ fn spawn_player(
                 &asset_server,
                 &mut meshes,
                 &mut materials,
+                Color::Hsla(Hsla::new(180.0, 1.0, 0.5, 1.0)),
             );
         });
 
@@ -149,6 +150,7 @@ fn spawn_player(
                 &asset_server,
                 &mut meshes,
                 &mut materials,
+                Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0)),
             );
         });
 }
@@ -256,7 +258,7 @@ fn apply_controls_2(
     }
 }
 
-fn swap_player_model(
+fn swap_player_model1(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -267,7 +269,7 @@ fn swap_player_model(
             &ActionState<PlayerAction>,
             &model::CurrentPlayerModel,
         ),
-        With<Player>,
+        With<Player1>,
     >,
     model_query: Query<Entity, With<model::PlayerModel>>,
 ) {
@@ -292,6 +294,53 @@ fn swap_player_model(
                 &asset_server,
                 &mut meshes,
                 &mut materials,
+                Color::Hsla(Hsla::new(180.0, 1.0, 0.5, 1.0)),
+            );
+        });
+
+        commands
+            .entity(player_entity)
+            .insert(model::CurrentPlayerModel(new_model));
+    }
+}
+
+fn swap_player_model2(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    player_query: Query<
+        (
+            Entity,
+            &ActionState<PlayerAction>,
+            &model::CurrentPlayerModel,
+        ),
+        With<Player2>,
+    >,
+    model_query: Query<Entity, With<model::PlayerModel>>,
+) {
+    let Ok((player_entity, action_state, current_player_model)) = player_query.single() else {
+        return;
+    };
+
+    if action_state.just_pressed(&PlayerAction::SwapModel) {
+        for model_entity in model_query.iter() {
+            commands.entity(model_entity).despawn();
+        }
+
+        let new_model = match current_player_model.0 {
+            model::PlayerModelType::Donut => model::PlayerModelType::Cube,
+            model::PlayerModelType::Cube => model::PlayerModelType::Donut,
+        };
+
+        commands.entity(player_entity).with_children(|parent| {
+            model::spawn_player_model(
+                parent,
+                new_model,
+                &asset_server,
+                &mut meshes,
+                &mut materials,
+                Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0)),
             );
         });
 
