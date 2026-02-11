@@ -6,6 +6,9 @@ use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 pub struct PlayerModel;
 
 #[derive(Component)]
+pub struct PlayerColor(pub Color);
+
+#[derive(Component)]
 pub struct CurrentPlayerModel(pub PlayerModelType);
 
 #[derive(Clone, Copy, PartialEq, Eq)]

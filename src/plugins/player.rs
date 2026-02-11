@@ -15,14 +15,8 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_player);
-        app.add_systems(
-            FixedUpdate,
-            (
-                apply_controls_1.in_set(TnuaUserControlsSystems),
-                apply_controls_2.in_set(TnuaUserControlsSystems),
-            ),
-        );
-        app.add_systems(Update, (swap_player_model1, swap_player_model2));
+        app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
+        app.add_systems(Update, swap_player_model);
     }
 }
 
@@ -85,6 +79,7 @@ fn spawn_player(
             // Adding mass here so there are no problems when swapping models.
             Mass(1.0),
             model::CurrentPlayerModel(model::PlayerModelType::Donut),
+            model::PlayerColor(Color::Hsla(Hsla::new(180.0, 1.0, 0.5, 1.0))),
             Player,
             Player1,
             Name::new("Player1"),
@@ -138,6 +133,7 @@ fn spawn_player(
             // Adding mass here so there are no problems when swapping models.
             Mass(1.0),
             model::CurrentPlayerModel(model::PlayerModelType::Donut),
+            model::PlayerColor(Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0))),
             Player,
             Player2,
             Name::new("Player2"),
@@ -155,7 +151,7 @@ fn spawn_player(
         });
 }
 // Movement System
-fn apply_controls_1(
+fn apply_controls(
     time: Res<Time>,
     mut query: Query<
         (
@@ -163,102 +159,49 @@ fn apply_controls_1(
             &mut TnuaController<PlayerControlScheme>,
             &mut Transform,
         ),
-        With<Player1>,
+        With<Player>,
     >,
 ) {
-    let Ok((action_state, mut controller, mut transform)) = query.single_mut() else {
-        return;
-    };
-    controller.initiate_action_feeding();
+    for (action_state, mut controller, mut transform) in query.iter_mut() {
+        controller.initiate_action_feeding();
 
-    let forward = transform.forward();
-    let mut direction = Vec3::ZERO;
-    let rotation_speed = 2.0;
+        let forward = transform.forward();
+        let mut direction = Vec3::ZERO;
+        let rotation_speed = 2.0;
 
-    if action_state.pressed(&PlayerAction::Forward) {
-        direction += *forward;
-    }
-    if action_state.pressed(&PlayerAction::Backward) {
-        direction -= *forward;
-    }
-    if action_state.pressed(&PlayerAction::TurnLeft) {
-        transform.rotate_y(rotation_speed * time.delta_secs());
-    }
-    if action_state.pressed(&PlayerAction::TurnRight) {
-        transform.rotate_y(-rotation_speed * time.delta_secs());
-    }
+        if action_state.pressed(&PlayerAction::Forward) {
+            direction += *forward;
+        }
+        if action_state.pressed(&PlayerAction::Backward) {
+            direction -= *forward;
+        }
+        if action_state.pressed(&PlayerAction::TurnLeft) {
+            transform.rotate_y(rotation_speed * time.delta_secs());
+        }
+        if action_state.pressed(&PlayerAction::TurnRight) {
+            transform.rotate_y(-rotation_speed * time.delta_secs());
+        }
 
-    // Feed the basis every frame. Even if the player doesn't move - just use `desired_velocity:
-    // Vec3::ZERO`. `TnuaController` starts without a basis, which will make the character collider
-    // just fall.
-    controller.basis = TnuaBuiltinWalk {
-        // The `desired_velocity` determines how the character will move.
-        desired_motion: direction.normalize_or_zero() * 10.0,
-        // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they have
-        // sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn what they do.
-        ..Default::default()
-    };
+        // Feed the basis every frame. Even if the player doesn't move - just use `desired_velocity:
+        // Vec3::ZERO`. `TnuaController` starts without a basis, which will make the character collider
+        // just fall.
+        controller.basis = TnuaBuiltinWalk {
+            // The `desired_velocity` determines how the character will move.
+            desired_motion: direction.normalize_or_zero() * 10.0,
+            // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they have
+            // sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn what they do.
+            ..Default::default()
+        };
 
-    // Feed the jump action every frame as long as the player holds the jump button. If the player
-    // stops holding the jump button, simply stop feeding the action.
-    if action_state.pressed(&PlayerAction::Jump) {
-        controller.action(PlayerControlScheme::Jump(Default::default()));
+        // Feed the jump action every frame as long as the player holds the jump button. If the player
+        // stops holding the jump button, simply stop feeding the action.
+        if action_state.pressed(&PlayerAction::Jump) {
+            controller.action(PlayerControlScheme::Jump(Default::default()));
+        }
     }
 }
 
-// Movement System
-fn apply_controls_2(
-    time: Res<Time>,
-    mut query: Query<
-        (
-            &ActionState<PlayerAction>,
-            &mut TnuaController<PlayerControlScheme>,
-            &mut Transform,
-        ),
-        With<Player2>,
-    >,
-) {
-    let Ok((action_state, mut controller, mut transform)) = query.single_mut() else {
-        return;
-    };
-    controller.initiate_action_feeding();
-
-    let forward = transform.forward();
-    let mut direction = Vec3::ZERO;
-    let rotation_speed = 2.0;
-
-    if action_state.pressed(&PlayerAction::Forward) {
-        direction += *forward;
-    }
-    if action_state.pressed(&PlayerAction::Backward) {
-        direction -= *forward;
-    }
-    if action_state.pressed(&PlayerAction::TurnLeft) {
-        transform.rotate_y(rotation_speed * time.delta_secs());
-    }
-    if action_state.pressed(&PlayerAction::TurnRight) {
-        transform.rotate_y(-rotation_speed * time.delta_secs());
-    }
-
-    // Feed the basis every frame. Even if the player doesn't move - just use `desired_velocity:
-    // Vec3::ZERO`. `TnuaController` starts without a basis, which will make the character collider
-    // just fall.
-    controller.basis = TnuaBuiltinWalk {
-        // The `desired_velocity` determines how the character will move.
-        desired_motion: direction.normalize_or_zero() * 10.0,
-        // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they have
-        // sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn what they do.
-        ..Default::default()
-    };
-
-    // Feed the jump action every frame as long as the player holds the jump button. If the player
-    // stops holding the jump button, simply stop feeding the action.
-    if action_state.pressed(&PlayerAction::Jump) {
-        controller.action(PlayerControlScheme::Jump(Default::default()));
-    }
-}
-
-fn swap_player_model1(
+fn swap_player_model(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -268,84 +211,41 @@ fn swap_player_model1(
             Entity,
             &ActionState<PlayerAction>,
             &model::CurrentPlayerModel,
+            &Children,
+            &model::PlayerColor,
         ),
-        With<Player1>,
+        With<Player>,
     >,
     model_query: Query<Entity, With<model::PlayerModel>>,
 ) {
-    let Ok((player_entity, action_state, current_player_model)) = player_query.single() else {
-        return;
-    };
+    for (player_entity, action_state, current_player_model, childern, color) in player_query.iter()
+    {
+        if action_state.just_pressed(&PlayerAction::SwapModel) {
+            for model_entity in model_query.iter() {
+                if childern.contains(&model_entity) {
+                    commands.entity(model_entity).despawn();
+                }
+            }
 
-    if action_state.just_pressed(&PlayerAction::SwapModel) {
-        for model_entity in model_query.iter() {
-            commands.entity(model_entity).despawn();
+            let new_model = match current_player_model.0 {
+                model::PlayerModelType::Donut => model::PlayerModelType::Cube,
+                model::PlayerModelType::Cube => model::PlayerModelType::Donut,
+            };
+
+            commands.entity(player_entity).with_children(|parent| {
+                model::spawn_player_model(
+                    parent,
+                    new_model,
+                    &asset_server,
+                    &mut meshes,
+                    &mut materials,
+                    color.0,
+                );
+            });
+
+            commands
+                .entity(player_entity)
+                .insert(model::CurrentPlayerModel(new_model));
         }
-
-        let new_model = match current_player_model.0 {
-            model::PlayerModelType::Donut => model::PlayerModelType::Cube,
-            model::PlayerModelType::Cube => model::PlayerModelType::Donut,
-        };
-
-        commands.entity(player_entity).with_children(|parent| {
-            model::spawn_player_model(
-                parent,
-                new_model,
-                &asset_server,
-                &mut meshes,
-                &mut materials,
-                Color::Hsla(Hsla::new(180.0, 1.0, 0.5, 1.0)),
-            );
-        });
-
-        commands
-            .entity(player_entity)
-            .insert(model::CurrentPlayerModel(new_model));
-    }
-}
-
-fn swap_player_model2(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    player_query: Query<
-        (
-            Entity,
-            &ActionState<PlayerAction>,
-            &model::CurrentPlayerModel,
-        ),
-        With<Player2>,
-    >,
-    model_query: Query<Entity, With<model::PlayerModel>>,
-) {
-    let Ok((player_entity, action_state, current_player_model)) = player_query.single() else {
-        return;
-    };
-
-    if action_state.just_pressed(&PlayerAction::SwapModel) {
-        for model_entity in model_query.iter() {
-            commands.entity(model_entity).despawn();
-        }
-
-        let new_model = match current_player_model.0 {
-            model::PlayerModelType::Donut => model::PlayerModelType::Cube,
-            model::PlayerModelType::Cube => model::PlayerModelType::Donut,
-        };
-
-        commands.entity(player_entity).with_children(|parent| {
-            model::spawn_player_model(
-                parent,
-                new_model,
-                &asset_server,
-                &mut meshes,
-                &mut materials,
-                Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0)),
-            );
-        });
-
-        commands
-            .entity(player_entity)
-            .insert(model::CurrentPlayerModel(new_model));
     }
 }
