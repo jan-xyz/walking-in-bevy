@@ -1,4 +1,4 @@
-use bevy::{camera::Viewport, prelude::*};
+use bevy::{camera::Viewport, prelude::*, window::WindowResized};
 
 use crate::plugins::player::{Player, Player1, Player2};
 
@@ -8,6 +8,7 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup_camera);
         app.add_systems(PostUpdate, (follow_player1, follow_player2));
+        app.add_systems(Update, update_viewport);
     }
 }
 
@@ -17,18 +18,11 @@ struct PlayerCamera1;
 #[derive(Component)]
 struct PlayerCamera2;
 
-fn setup_camera(mut commands: Commands, windows: Query<&Window>) {
-    let Ok(window) = windows.single() else { return };
-    let width = window.physical_width();
-    let height = window.physical_height();
-
-    let mut camera1 = Camera::default();
-    camera1.viewport = Some(Viewport {
-        physical_size: UVec2::new(width, height / 2),
-        physical_position: UVec2::new(0, height / 2),
-        ..Default::default()
-    });
-    camera1.order = 0;
+fn setup_camera(mut commands: Commands) {
+    let camera1 = Camera {
+        order: 0,
+        ..default()
+    };
     // Spawn a camera
     commands.spawn((
         Camera3d::default(),
@@ -38,13 +32,10 @@ fn setup_camera(mut commands: Commands, windows: Query<&Window>) {
         Name::new("Player Camera 1"),
     ));
 
-    let mut camera2 = Camera::default();
-    camera2.viewport = Some(Viewport {
-        physical_size: UVec2::new(width, height / 2),
-        physical_position: UVec2::new(0, 0),
-        ..Default::default()
-    });
-    camera2.order = 1;
+    let camera2 = Camera {
+        order: 1,
+        ..default()
+    };
 
     // Spawn a camera
     commands.spawn((
@@ -54,6 +45,40 @@ fn setup_camera(mut commands: Commands, windows: Query<&Window>) {
         PlayerCamera2,
         Name::new("Player Camera 2"),
     ));
+}
+
+fn update_viewport(
+    mut resize_events: MessageReader<WindowResized>,
+    windows: Query<&Window>,
+    mut camera1: Query<&mut Camera, With<PlayerCamera1>>,
+    mut camera2: Query<&mut Camera, (With<PlayerCamera2>, Without<PlayerCamera1>)>,
+) {
+    if let Some(event) = resize_events.read().last() {
+        let Ok(window) = windows.get(event.window) else {
+            return;
+        };
+        let width = window.physical_width();
+        let height = window.physical_height();
+
+        // Update Player1Camera viewport (top half)
+        let Ok(mut camera1) = camera1.single_mut() else {
+            return;
+        };
+        camera1.viewport = Some(Viewport {
+            physical_size: UVec2::new(width, height / 2),
+            physical_position: UVec2::new(0, height / 2),
+            ..Default::default()
+        });
+        // Update Player2Camera viewport (bottom half)
+        let Ok(mut camera2) = camera2.single_mut() else {
+            return;
+        };
+        camera2.viewport = Some(Viewport {
+            physical_size: UVec2::new(width, height / 2),
+            physical_position: UVec2::new(0, 0),
+            ..Default::default()
+        });
+    }
 }
 
 fn follow_player1(
