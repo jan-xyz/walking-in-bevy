@@ -130,6 +130,22 @@ mod tests {
     }
 
     #[test]
+    fn test_on_player_added() {
+        // Given
+        let mut world = World::new();
+        world.add_observer(on_player_added);
+
+        // When
+        let player = world.spawn((Transform::default(), Player)).id();
+        world.flush();
+
+        // Then
+        let mut query = world.query::<&FollowPlayer>();
+        let follow = query.single(&world).unwrap();
+        assert_eq!(follow.0, player);
+    }
+
+    #[test]
     fn test_follow_player() {
         struct TestCase {
             name: &'static str,
