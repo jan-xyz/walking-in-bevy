@@ -12,12 +12,12 @@ impl Plugin for CameraPlugin {
         app.add_systems(PostUpdate, follow_player);
         app.add_systems(Update, update_viewport);
 
-        app.add_observer(on_player_added);
-        app.add_observer(on_camera_added);
+        app.add_observer(add_camera_on_player_added);
+        app.add_observer(adjust_viewport_on_camera_added);
     }
 }
 
-fn on_player_added(
+fn add_camera_on_player_added(
     trigger: On<Add, Player>,
     mut commands: Commands,
     player: Query<Entity, With<FollowPlayer>>,
@@ -38,7 +38,7 @@ fn on_player_added(
     ));
 }
 
-fn on_camera_added(
+fn adjust_viewport_on_camera_added(
     _trigger: On<Add, FollowPlayer>,
     windows: Query<&Window>,
     mut cameras: Query<&mut Camera, With<FollowPlayer>>,
@@ -50,7 +50,7 @@ fn on_camera_added(
 
     cameras
         .iter_mut()
-        .zip(calculate_viewports(window, num_cameras))
+        .zip(calculate_viewport(window, num_cameras))
         .for_each(|(mut camera, viewport)| {
             camera.viewport = Some(viewport);
         });
@@ -69,7 +69,7 @@ fn update_viewport(
 
         cameras
             .iter_mut()
-            .zip(calculate_viewports(window, num_cameras))
+            .zip(calculate_viewport(window, num_cameras))
             .for_each(|(mut camera, viewport)| {
                 camera.viewport = Some(viewport);
             });
@@ -105,7 +105,7 @@ fn follow_player(
     }
 }
 
-fn calculate_viewports(window: &Window, num_cameras: u32) -> Vec<Viewport> {
+fn calculate_viewport(window: &Window, num_cameras: u32) -> Vec<Viewport> {
     let width = window.physical_width();
     let height = window.physical_height() / num_cameras;
 
@@ -130,10 +130,10 @@ mod tests {
     }
 
     #[test]
-    fn test_on_player_added() {
+    fn test_add_camera_on_player_added() {
         // Given
         let mut world = World::new();
-        world.add_observer(on_player_added);
+        world.add_observer(add_camera_on_player_added);
 
         // When
         let player = world.spawn((Transform::default(), Player)).id();
@@ -143,6 +143,78 @@ mod tests {
         let mut query = world.query::<&FollowPlayer>();
         let follow = query.single(&world).unwrap();
         assert_eq!(follow.0, player);
+    }
+
+    #[test]
+    fn test_adjust_viewport_on_camera_added() {
+        struct TestCase {
+            name: &'static str,
+            input_num_cameras: u32,
+            want: Vec<Viewport>,
+        }
+
+        let tests = [
+            TestCase {
+                name: "single pane",
+                input_num_cameras: 1,
+                want: vec![Viewport {
+                    physical_position: UVec2::new(0, 0),
+                    physical_size: UVec2::new(800, 600),
+                    ..default()
+                }],
+            },
+            TestCase {
+                name: "two panes",
+                input_num_cameras: 2,
+                want: vec![
+                    Viewport {
+                        physical_position: UVec2::new(0, 0),
+                        physical_size: UVec2::new(800, 300),
+                        ..default()
+                    },
+                    Viewport {
+                        physical_position: UVec2::new(0, 300),
+                        physical_size: UVec2::new(800, 300),
+                        ..default()
+                    },
+                ],
+            },
+        ];
+
+        for TestCase {
+            name,
+            input_num_cameras,
+            want,
+        } in tests.into_iter()
+        {
+            // Given
+            let mut world = World::new();
+            world.spawn(Window {
+                resolution: bevy::window::WindowResolution::new(800, 600),
+                ..default()
+            });
+
+            // When
+            world.add_observer(adjust_viewport_on_camera_added);
+            (0..input_num_cameras).for_each(|_i| {
+                let player = world.spawn(Player).id();
+                world.spawn((Camera::default(), FollowPlayer(player)));
+            });
+            world.flush();
+
+            // Then
+            let mut query = world.query::<&Camera>();
+            for (i, got) in query.iter(&world).enumerate() {
+                let want = want.get(i).unwrap();
+                assert!(
+                    viewport_eq(got.viewport.as_ref().unwrap(), want),
+                    "failed {}, got: {:?}, want: {:?}",
+                    name,
+                    got.viewport,
+                    want,
+                );
+            }
+        }
     }
 
     #[test]
@@ -207,10 +279,10 @@ mod tests {
                 let want = *want_cam_pos.get_mut(i).unwrap();
                 assert!(
                     got.translation.distance(want) < 0.1,
-                    "failed {}: want: {}, got: {}",
+                    "failed {}: got: {}, want: {}",
                     name,
-                    want,
                     got.translation,
+                    want,
                 );
             }
         }
@@ -263,12 +335,12 @@ mod tests {
                 ..default()
             };
 
-            let actual = calculate_viewports(&window, input_num_cameras);
+            let actual = calculate_viewport(&window, input_num_cameras);
 
             assert_eq!(
                 actual.len(),
                 want.len(),
-                "failed {}, actual: {:?}, want: {:?}",
+                "failed {}, got: {:?}, want: {:?}",
                 name,
                 actual,
                 want
@@ -278,7 +350,7 @@ mod tests {
                     .iter()
                     .enumerate()
                     .all(|(i, element)| viewport_eq(&want[i], element)),
-                "failed {}, actual: {:?}, want: {:?}",
+                "failed {}, got: {:?}, want: {:?}",
                 name,
                 actual,
                 want,
