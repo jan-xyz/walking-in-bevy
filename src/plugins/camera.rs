@@ -1,142 +1,119 @@
 use bevy::{camera::Viewport, prelude::*, window::WindowResized};
 
-use crate::plugins::player::{Player, Player1, Player2};
+use crate::plugins::player::Player;
 
 pub struct CameraPlugin;
 
+#[derive(Component)]
+pub struct FollowPlayer(Entity);
+
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup_camera);
-        app.add_systems(PostUpdate, (follow_player1, follow_player2));
+        app.add_systems(PostUpdate, follow_player);
         app.add_systems(Update, update_viewport);
+
+        app.add_observer(on_player_added);
+        app.add_observer(on_camera_added);
     }
 }
 
-#[derive(Component)]
-struct PlayerCamera1;
-
-#[derive(Component)]
-struct PlayerCamera2;
-
-fn setup_camera(mut commands: Commands) {
+fn on_player_added(
+    trigger: On<Add, Player>,
+    mut commands: Commands,
+    player: Query<Entity, With<FollowPlayer>>,
+) {
+    let i = player.count();
+    let player = trigger.event_target();
     let camera1 = Camera {
-        order: 0,
+        order: i as isize,
         ..default()
     };
     // Spawn a camera
     commands.spawn((
         Camera3d::default(),
         camera1,
-        Transform::from_xyz(0., 16., 40.).looking_at(Vec3::new(0., 10., 0.), Vec3::Y),
-        PlayerCamera1,
-        Name::new("Player Camera 1"),
+        Transform::default(),
+        Name::new(format!("Player Camera {}", i)),
+        FollowPlayer(player),
     ));
+}
 
-    let camera2 = Camera {
-        order: 1,
-        ..default()
+fn on_camera_added(
+    _trigger: On<Add, FollowPlayer>,
+    windows: Query<&Window>,
+    mut cameras: Query<&mut Camera, With<FollowPlayer>>,
+) {
+    let Ok(window) = windows.single() else {
+        return;
     };
+    let num_cameras = cameras.iter().len() as u32;
 
-    // Spawn a camera
-    commands.spawn((
-        Camera3d::default(),
-        camera2,
-        Transform::from_xyz(0., 16., 40.).looking_at(Vec3::new(10., 10., 0.), Vec3::Y),
-        PlayerCamera2,
-        Name::new("Player Camera 2"),
-    ));
+    cameras
+        .iter_mut()
+        .zip(calculate_viewports(window, num_cameras))
+        .for_each(|(mut camera, viewport)| {
+            camera.viewport = Some(viewport);
+        });
 }
 
 fn update_viewport(
     mut resize_events: MessageReader<WindowResized>,
     windows: Query<&Window>,
-    mut camera1: Query<&mut Camera, With<PlayerCamera1>>,
-    mut camera2: Query<&mut Camera, (With<PlayerCamera2>, Without<PlayerCamera1>)>,
+    mut cameras: Query<&mut Camera, With<FollowPlayer>>,
 ) {
     if let Some(event) = resize_events.read().last() {
         let Ok(window) = windows.get(event.window) else {
             return;
         };
-        let width = window.physical_width();
-        let height = window.physical_height();
+        let num_cameras = cameras.iter().len() as u32;
 
-        // Update Player1Camera viewport (top half)
-        let Ok(mut camera1) = camera1.single_mut() else {
-            return;
-        };
-        camera1.viewport = Some(Viewport {
-            physical_size: UVec2::new(width, height / 2),
-            physical_position: UVec2::new(0, height / 2),
-            ..Default::default()
-        });
-        // Update Player2Camera viewport (bottom half)
-        let Ok(mut camera2) = camera2.single_mut() else {
-            return;
-        };
-        camera2.viewport = Some(Viewport {
-            physical_size: UVec2::new(width, height / 2),
-            physical_position: UVec2::new(0, 0),
-            ..Default::default()
-        });
+        cameras
+            .iter_mut()
+            .zip(calculate_viewports(window, num_cameras))
+            .for_each(|(mut camera, viewport)| {
+                camera.viewport = Some(viewport);
+            });
     }
 }
 
-fn follow_player1(
+fn follow_player(
     time: Res<Time>,
-    player: Query<&Transform, With<Player1>>,
-    mut camera: Query<&mut Transform, (With<PlayerCamera1>, Without<Player>, Without<Player1>)>,
+    mut camera: Query<(&mut Transform, &FollowPlayer), Without<Player>>,
+    players: Query<&Transform, With<Player>>,
 ) {
-    let Ok(player_transform) = player.single() else {
-        return;
-    };
-    let Ok(mut cam_transform) = camera.single_mut() else {
-        return;
-    };
-    let distance = 30.0;
-    let height = 10.0;
+    for (mut cam_transform, player_follow) in camera.iter_mut() {
+        let Ok(player_transform) = players.get(player_follow.0) else {
+            continue;
+        };
+        let distance = 30.0;
+        let height = 10.0;
 
-    let target_translation =
-        player_transform.translation + *player_transform.back() * distance + Vec3::Y * height;
+        let target_translation =
+            player_transform.translation + *player_transform.back() * distance + Vec3::Y * height;
 
-    let target_rotation = Transform::from_translation(cam_transform.translation)
-        .looking_at(player_transform.translation, Vec3::Y)
-        .rotation;
+        let target_rotation = Transform::from_translation(cam_transform.translation)
+            .looking_at(player_transform.translation, Vec3::Y)
+            .rotation;
 
-    // lerp and slerp smoothen the movement of the camera by interpolating and moving toward the
-    // desired location instead of snapping.
-    // higher = snappier; lower = smoother
-    let smoothing = 15.0;
-    let t = time.delta_secs() * smoothing;
-    cam_transform.translation = cam_transform.translation.lerp(target_translation, t);
-    cam_transform.rotation = cam_transform.rotation.slerp(target_rotation, t)
+        // lerp and slerp smoothen the movement of the camera by interpolating and moving toward the
+        // desired location instead of snapping.
+        // higher = snappier; lower = smoother
+        let smoothing = 15.0;
+        let t = time.delta_secs() * smoothing;
+        cam_transform.translation = cam_transform.translation.lerp(target_translation, t);
+        cam_transform.rotation = cam_transform.rotation.slerp(target_rotation, t)
+    }
 }
 
-fn follow_player2(
-    time: Res<Time>,
-    player: Query<&Transform, With<Player2>>,
-    mut camera: Query<&mut Transform, (With<PlayerCamera2>, Without<Player>, Without<Player2>)>,
-) {
-    let Ok(player_transform) = player.single() else {
-        return;
-    };
-    let Ok(mut cam_transform) = camera.single_mut() else {
-        return;
-    };
-    let distance = 30.0;
-    let height = 10.0;
+fn calculate_viewports(window: &Window, num_cameras: u32) -> Vec<Viewport> {
+    let width = window.physical_width();
+    let height = window.physical_height() / num_cameras;
 
-    let target_translation =
-        player_transform.translation + *player_transform.back() * distance + Vec3::Y * height;
-
-    let target_rotation = Transform::from_translation(cam_transform.translation)
-        .looking_at(player_transform.translation, Vec3::Y)
-        .rotation;
-
-    // lerp and slerp smoothen the movement of the camera by interpolating and moving toward the
-    // desired location instead of snapping.
-    // higher = snappier; lower = smoother
-    let smoothing = 15.0;
-    let t = time.delta_secs() * smoothing;
-    cam_transform.translation = cam_transform.translation.lerp(target_translation, t);
-    cam_transform.rotation = cam_transform.rotation.slerp(target_rotation, t)
+    (0..num_cameras)
+        .map(|i| Viewport {
+            physical_size: UVec2::new(width, height),
+            physical_position: UVec2::new(0, height * i),
+            ..default()
+        })
+        .collect()
 }
