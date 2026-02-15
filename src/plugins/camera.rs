@@ -117,3 +117,156 @@ fn calculate_viewports(window: &Window, num_cameras: u32) -> Vec<Viewport> {
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+
+    use std::time::Duration;
+
+    use super::*;
+
+    fn viewport_eq(a: &Viewport, b: &Viewport) -> bool {
+        a.physical_size == b.physical_size && a.physical_position == b.physical_position
+    }
+
+    #[test]
+    fn test_follow_player() {
+        struct TestCase {
+            name: &'static str,
+            input_player_pos: Vec<Transform>,
+            want_cam_pos: Vec<Vec3>,
+        }
+
+        let tests = [
+            TestCase {
+                name: "single player",
+                input_player_pos: vec![Transform::from_xyz(100.0, 0.0, 0.0)],
+                want_cam_pos: vec![Vec3::new(100.0, 10.0, 30.0)],
+            },
+            TestCase {
+                name: "two player",
+                input_player_pos: vec![
+                    Transform::from_xyz(100.0, 0.0, 0.0),
+                    Transform::from_xyz(-100.0, 0.0, 0.0),
+                ],
+                want_cam_pos: vec![Vec3::new(100.0, 10.0, 30.0), Vec3::new(-100.0, 10.0, 30.0)],
+            },
+        ];
+
+        for TestCase {
+            name,
+            input_player_pos,
+            mut want_cam_pos,
+        } in tests.into_iter()
+        {
+            // Given
+            let mut world = World::new();
+
+            let time = Time::<()>::default();
+            world.insert_resource(time);
+
+            // insert all camera and player bundles to follow
+            for transform in input_player_pos.into_iter() {
+                let player = world.spawn((transform, Player)).id();
+
+                let start = Transform::from_xyz(0.0, 0.0, 0.0);
+                world.spawn((start, FollowPlayer(player)));
+            }
+
+            // When
+            let mut schedule = Schedule::default();
+            schedule.add_systems(follow_player);
+
+            // Simulate time at 60fps
+            for _ in 0..600 {
+                world
+                    .resource_mut::<Time<()>>()
+                    .advance_by(Duration::from_millis(16));
+                schedule.run(&mut world);
+            }
+
+            // Then
+            let mut query = world.query::<(&Transform, &FollowPlayer)>();
+            for (i, (got, _)) in query.iter(&world).enumerate() {
+                let want = *want_cam_pos.get_mut(i).unwrap();
+                assert!(
+                    got.translation.distance(want) < 0.1,
+                    "failed {}: want: {}, got: {}",
+                    name,
+                    want,
+                    got.translation,
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_calculate_viewports() {
+        struct TestCase {
+            name: &'static str,
+            input_num_cameras: u32,
+            want: Vec<Viewport>,
+        }
+
+        let tests = [
+            TestCase {
+                name: "single pane",
+                input_num_cameras: 1,
+                want: vec![Viewport {
+                    physical_position: UVec2::new(0, 0),
+                    physical_size: UVec2::new(800, 600),
+                    ..default()
+                }],
+            },
+            TestCase {
+                name: "two panes",
+                input_num_cameras: 2,
+                want: vec![
+                    Viewport {
+                        physical_position: UVec2::new(0, 0),
+                        physical_size: UVec2::new(800, 300),
+                        ..default()
+                    },
+                    Viewport {
+                        physical_position: UVec2::new(0, 300),
+                        physical_size: UVec2::new(800, 300),
+                        ..default()
+                    },
+                ],
+            },
+        ];
+
+        for TestCase {
+            name,
+            input_num_cameras,
+            want,
+        } in tests.into_iter()
+        {
+            let window = Window {
+                resolution: bevy::window::WindowResolution::new(800, 600),
+                ..default()
+            };
+
+            let actual = calculate_viewports(&window, input_num_cameras);
+
+            assert_eq!(
+                actual.len(),
+                want.len(),
+                "failed {}, actual: {:?}, want: {:?}",
+                name,
+                actual,
+                want
+            );
+            assert!(
+                actual
+                    .iter()
+                    .enumerate()
+                    .all(|(i, element)| viewport_eq(&want[i], element)),
+                "failed {}, actual: {:?}, want: {:?}",
+                name,
+                actual,
+                want,
+            );
+        }
+    }
+}
