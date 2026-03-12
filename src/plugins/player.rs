@@ -271,9 +271,9 @@ fn swap_player_model(
 
 #[cfg(test)]
 mod test {
-    use bevy::math::Vec3;
-
     use super::*;
+
+    use bevy::math::Vec3;
 
     #[test]
     fn test_movement_direction() {
@@ -326,6 +326,7 @@ mod test {
             )
         }
     }
+
     #[test]
     fn test_movement_rotation() {
         struct TestCase {
