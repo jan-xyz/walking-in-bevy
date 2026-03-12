@@ -20,7 +20,51 @@ pub enum PlayerModelType {
     Cube,
 }
 
-pub fn spawn_player_model(
+pub struct ModelPlugin;
+
+impl Plugin for ModelPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_observer(on_player_added);
+        app.add_systems(Update, swap_player_model);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn on_player_added(
+    trigger: On<Insert, CurrentPlayerModel>,
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    children_query: Query<&Children>,
+    model_query: Query<Entity, With<PlayerModel>>,
+    player_query: Query<(&CurrentPlayerModel, &PlayerColor)>,
+) {
+    let player_entity = trigger.event_target();
+
+    if let Ok(children) = children_query.get(player_entity) {
+        for model_entity in model_query.iter() {
+            if children.contains(&model_entity) {
+                commands.entity(model_entity).despawn();
+            }
+        }
+    };
+
+    if let Ok((new_model, color)) = player_query.get(player_entity) {
+        commands.entity(player_entity).with_children(|parent| {
+            spawn_player_model(
+                parent,
+                new_model.0,
+                &asset_server,
+                &mut meshes,
+                &mut materials,
+                color.0,
+            );
+        });
+    }
+}
+
+fn spawn_player_model(
     parent: &mut RelatedSpawnerCommands<ChildOf>,
     model_type: PlayerModelType,
     asset_server: &AssetServer,
@@ -79,47 +123,19 @@ pub fn spawn_player_model(
 }
 
 #[allow(clippy::type_complexity)]
-pub fn swap_player_model(
+fn swap_player_model(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     player_query: Query<
-        (
-            Entity,
-            &ActionState<PlayerAction>,
-            &CurrentPlayerModel,
-            &Children,
-            &PlayerColor,
-        ),
+        (Entity, &ActionState<PlayerAction>, &CurrentPlayerModel),
         With<super::Player>,
     >,
-    model_query: Query<Entity, With<PlayerModel>>,
 ) {
-    for (player_entity, action_state, current_player_model, childern, color) in player_query.iter()
-    {
+    for (player_entity, action_state, current_player_model) in player_query.iter() {
         if action_state.just_pressed(&PlayerAction::SwapModel) {
-            for model_entity in model_query.iter() {
-                if childern.contains(&model_entity) {
-                    commands.entity(model_entity).despawn();
-                }
-            }
-
             let new_model = match current_player_model.0 {
                 PlayerModelType::Donut => PlayerModelType::Cube,
                 PlayerModelType::Cube => PlayerModelType::Donut,
             };
-
-            commands.entity(player_entity).with_children(|parent| {
-                spawn_player_model(
-                    parent,
-                    new_model,
-                    &asset_server,
-                    &mut meshes,
-                    &mut materials,
-                    color.0,
-                );
-            });
 
             commands
                 .entity(player_entity)

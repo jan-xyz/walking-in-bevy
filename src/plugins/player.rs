@@ -18,7 +18,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_players);
         app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
-        app.add_systems(Update, model::swap_player_model);
+        app.add_plugins(model::ModelPlugin);
     }
 }
 
@@ -40,9 +40,6 @@ struct PlayerConfig {
 
 fn spawn_players(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
     mut control_scheme_configs: ResMut<Assets<PlayerControlSchemeConfig>>,
 ) {
     let players = [
@@ -61,49 +58,38 @@ fn spawn_players(
     ];
 
     for config in players {
-        commands
-            .spawn((
-                config.spawn_pos,
-                Name::new(config.name),
-                config.input_map,
-                model::PlayerColor(config.color),
-                TransformInterpolation,
-                RigidBody::Dynamic,
-                TnuaController::<PlayerControlScheme>::default(),
-                TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(
-                    PlayerControlSchemeConfig {
-                        basis: TnuaBuiltinWalkConfig {
-                            // The `float_height` must be greater (even if by little) from the distance between
-                            // the character's center and the lowest point of its collider.
-                            float_height: 1.5,
-                            ..Default::default()
-                        },
-                        jump: TnuaBuiltinJumpConfig {
-                            height: 4.0,
-                            ..Default::default()
-                        },
+        commands.spawn((
+            config.spawn_pos,
+            Name::new(config.name),
+            config.input_map,
+            model::PlayerColor(config.color),
+            TransformInterpolation,
+            RigidBody::Dynamic,
+            TnuaController::<PlayerControlScheme>::default(),
+            TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(
+                PlayerControlSchemeConfig {
+                    basis: TnuaBuiltinWalkConfig {
+                        // The `float_height` must be greater (even if by little) from the distance between
+                        // the character's center and the lowest point of its collider.
+                        float_height: 1.5,
+                        ..Default::default()
                     },
-                )),
-                // Tnua can fix the rotation, but the character will still get rotated before it can do so.
-                // By locking the rotation we can prevent this.
-                LockedAxes::ROTATION_LOCKED,
-                // Adding mass & collider so there are no problems when swapping models.
-                Mass(1.0),
-                Collider::capsule(0.5, 1.0),
-                model::CurrentPlayerModel(model::PlayerModelType::Donut),
-                Player,
-                Visibility::default(),
-            ))
-            .with_children(|parent| {
-                model::spawn_player_model(
-                    parent,
-                    model::PlayerModelType::Donut,
-                    &asset_server,
-                    &mut meshes,
-                    &mut materials,
-                    config.color,
-                );
-            });
+                    jump: TnuaBuiltinJumpConfig {
+                        height: 4.0,
+                        ..Default::default()
+                    },
+                },
+            )),
+            // Tnua can fix the rotation, but the character will still get rotated before it can do so.
+            // By locking the rotation we can prevent this.
+            LockedAxes::ROTATION_LOCKED,
+            // Adding mass & collider so there are no problems when swapping models.
+            Mass(1.0),
+            Collider::capsule(0.5, 1.0),
+            model::CurrentPlayerModel(model::PlayerModelType::Donut),
+            Player,
+            Visibility::default(),
+        ));
     }
 }
 
