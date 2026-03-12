@@ -63,16 +63,10 @@ fn spawn_players(
     for config in players {
         commands
             .spawn((
-                ///////////////////////
-                // Dynamic config    //
-                ///////////////////////
                 config.spawn_pos,
                 Name::new(config.name),
                 config.input_map,
                 model::PlayerColor(config.color),
-                ///////////////////////
-                // Static config     //
-                ///////////////////////
                 TransformInterpolation,
                 RigidBody::Dynamic,
                 TnuaController::<PlayerControlScheme>::default(),
@@ -93,10 +87,12 @@ fn spawn_players(
                 // Tnua can fix the rotation, but the character will still get rotated before it can do so.
                 // By locking the rotation we can prevent this.
                 LockedAxes::ROTATION_LOCKED,
-                // Adding mass so there are no problems when swapping models.
+                // Adding mass & collider so there are no problems when swapping models.
                 Mass(1.0),
+                Collider::capsule(0.5, 1.0),
                 model::CurrentPlayerModel(model::PlayerModelType::Donut),
                 Player,
+                Visibility::default(),
             ))
             .with_children(|parent| {
                 model::spawn_player_model(
@@ -111,7 +107,6 @@ fn spawn_players(
     }
 }
 
-// Movement System
 #[allow(clippy::type_complexity)]
 fn apply_controls(
     time: Res<Time>,
