@@ -6,7 +6,7 @@ use bevy_tnua::{
     builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig},
     prelude::*,
 };
-use leafwing_input_manager::prelude::ActionState;
+use leafwing_input_manager::prelude::{ActionState, InputMap};
 
 use crate::plugins::input::{default_player1_input_map, default_player2_input_map, PlayerAction};
 
@@ -16,7 +16,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_player);
+        app.add_systems(Startup, spawn_players);
         app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
         app.add_systems(Update, swap_player_model);
     }
@@ -25,133 +25,102 @@ impl Plugin for PlayerPlugin {
 #[derive(Component)]
 pub struct Player;
 
-#[derive(Component)]
-pub struct Player1;
-
-#[derive(Component)]
-pub struct Player2;
-
 #[derive(TnuaScheme)]
 #[scheme(basis = TnuaBuiltinWalk)]
 pub enum PlayerControlScheme {
     Jump(TnuaBuiltinJump),
 }
 
-fn spawn_player(
+struct PlayerConfig {
+    name: &'static str,
+    spawn_pos: Transform,
+    input_map: InputMap<PlayerAction>,
+    color: Color,
+}
+
+fn spawn_players(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut control_scheme_configs: ResMut<Assets<PlayerControlSchemeConfig>>,
 ) {
-    // Player 1
-    commands
-        .spawn((
-            TransformInterpolation,
-            Transform::from_xyz(0., 2., 0.),
-            // The player character needs to be configured as a dynamic rigid body of the physics
-            // engine.
-            RigidBody::Dynamic,
-            // This is the Tnua interface component.
-            TnuaController::<PlayerControlScheme>::default(),
-            // The configuration asset can be loaded from a file, but here we are creating it by code
-            // and injecting it to the assets resource.
-            TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(
-                PlayerControlSchemeConfig {
-                    basis: TnuaBuiltinWalkConfig {
-                        // The `float_height` must be greater (even if by little) from the distance between
-                        // the character's center and the lowest point of its collider.
-                        float_height: 1.5,
-                        // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they
-                        // have sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn
-                        // what they do.
-                        ..Default::default()
-                    },
-                    jump: TnuaBuiltinJumpConfig {
-                        // The height is the only mandatory field of the jump action.
-                        height: 4.0,
-                        // `TnuaBuiltinJump` also has customization fields with sensible defaults.
-                        ..Default::default()
-                    },
-                },
-            )),
-            // Tnua can fix the rotation, but the character will still get rotated before it can do so.
-            // By locking the rotation we can prevent this.
-            LockedAxes::ROTATION_LOCKED,
-            // Adding mass here so there are no problems when swapping models.
-            Mass(1.0),
-            model::CurrentPlayerModel(model::PlayerModelType::Donut),
-            model::PlayerColor(Color::Hsla(Hsla::new(180.0, 1.0, 0.5, 1.0))),
-            Player,
-            Player1,
-            Name::new("Player1"),
-            default_player1_input_map(),
-        ))
-        .with_children(|parent| {
-            model::spawn_player_model(
-                parent,
-                model::PlayerModelType::Donut,
-                &asset_server,
-                &mut meshes,
-                &mut materials,
-                Color::Hsla(Hsla::new(180.0, 1.0, 0.5, 1.0)),
-            );
-        });
+    let players = [
+        PlayerConfig {
+            name: "Player 1",
+            spawn_pos: Transform::from_xyz(0., 2., 0.),
+            input_map: default_player1_input_map(),
+            color: Color::Hsla(Hsla::new(180.0, 1.0, 0.5, 1.0)),
+        },
+        PlayerConfig {
+            name: "Player 2",
+            spawn_pos: Transform::from_xyz(10., 2., 0.),
+            input_map: default_player2_input_map(),
+            color: Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0)),
+        },
+    ];
 
-    // Player 2
-    commands
-        .spawn((
-            TransformInterpolation,
-            Transform::from_xyz(10., 2., 0.),
-            // The player character needs to be configured as a dynamic rigid body of the physics
-            // engine.
-            RigidBody::Dynamic,
-            // This is the Tnua interface component.
-            TnuaController::<PlayerControlScheme>::default(),
-            // The configuration asset can be loaded from a file, but here we are creating it by code
-            // and injecting it to the assets resource.
-            TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(
-                PlayerControlSchemeConfig {
-                    basis: TnuaBuiltinWalkConfig {
-                        // The `float_height` must be greater (even if by little) from the distance between
-                        // the character's center and the lowest point of its collider.
-                        float_height: 1.5,
-                        // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they
-                        // have sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn
-                        // what they do.
-                        ..Default::default()
+    for config in players {
+        commands
+            .spawn((
+                ///////////////////////
+                // Dynamic config    //
+                ///////////////////////
+                config.spawn_pos,
+                Name::new(config.name),
+                config.input_map,
+                model::PlayerColor(config.color),
+                ///////////////////////
+                // Static config     //
+                ///////////////////////
+                TransformInterpolation,
+                // The player character needs to be configured as a dynamic rigid body of the physics
+                // engine.
+                RigidBody::Dynamic,
+                // This is the Tnua interface component.
+                TnuaController::<PlayerControlScheme>::default(),
+                // The configuration asset can be loaded from a file, but here we are creating it by code
+                // and injecting it to the assets resource.
+                TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(
+                    PlayerControlSchemeConfig {
+                        basis: TnuaBuiltinWalkConfig {
+                            // The `float_height` must be greater (even if by little) from the distance between
+                            // the character's center and the lowest point of its collider.
+                            float_height: 1.5,
+                            // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they
+                            // have sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn
+                            // what they do.
+                            ..Default::default()
+                        },
+                        jump: TnuaBuiltinJumpConfig {
+                            // The height is the only mandatory field of the jump action.
+                            height: 4.0,
+                            // `TnuaBuiltinJump` also has customization fields with sensible defaults.
+                            ..Default::default()
+                        },
                     },
-                    jump: TnuaBuiltinJumpConfig {
-                        // The height is the only mandatory field of the jump action.
-                        height: 4.0,
-                        // `TnuaBuiltinJump` also has customization fields with sensible defaults.
-                        ..Default::default()
-                    },
-                },
-            )),
-            // Tnua can fix the rotation, but the character will still get rotated before it can do so.
-            // By locking the rotation we can prevent this.
-            LockedAxes::ROTATION_LOCKED,
-            // Adding mass here so there are no problems when swapping models.
-            Mass(1.0),
-            model::CurrentPlayerModel(model::PlayerModelType::Donut),
-            model::PlayerColor(Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0))),
-            Player,
-            Player2,
-            Name::new("Player2"),
-            default_player2_input_map(),
-        ))
-        .with_children(|parent| {
-            model::spawn_player_model(
-                parent,
-                model::PlayerModelType::Donut,
-                &asset_server,
-                &mut meshes,
-                &mut materials,
-                Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0)),
-            );
-        });
+                )),
+                // Tnua can fix the rotation, but the character will still get rotated before it can do so.
+                // By locking the rotation we can prevent this.
+                LockedAxes::ROTATION_LOCKED,
+                // Adding mass here so there are no problems when swapping models.
+                Mass(1.0),
+                model::CurrentPlayerModel(model::PlayerModelType::Donut),
+                Player,
+            ))
+            .with_children(|parent| {
+                model::spawn_player_model(
+                    parent,
+                    model::PlayerModelType::Donut,
+                    &asset_server,
+                    &mut meshes,
+                    &mut materials,
+                    config.color,
+                );
+            });
+    }
 }
+
 // Movement System
 #[allow(clippy::type_complexity)]
 fn apply_controls(
