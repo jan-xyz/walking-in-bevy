@@ -18,7 +18,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_players);
         app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
-        app.add_systems(Update, swap_player_model);
+        app.add_systems(Update, model::swap_player_model);
     }
 }
 
@@ -166,56 +166,6 @@ fn movement_rotation(time_delta_sec: f32, left_pressed: bool, right_pressed: boo
         rotation -= ROTATION_SPEED * time_delta_sec;
     }
     rotation
-}
-
-#[allow(clippy::type_complexity)]
-fn swap_player_model(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    player_query: Query<
-        (
-            Entity,
-            &ActionState<PlayerAction>,
-            &model::CurrentPlayerModel,
-            &Children,
-            &model::PlayerColor,
-        ),
-        With<Player>,
-    >,
-    model_query: Query<Entity, With<model::PlayerModel>>,
-) {
-    for (player_entity, action_state, current_player_model, childern, color) in player_query.iter()
-    {
-        if action_state.just_pressed(&PlayerAction::SwapModel) {
-            for model_entity in model_query.iter() {
-                if childern.contains(&model_entity) {
-                    commands.entity(model_entity).despawn();
-                }
-            }
-
-            let new_model = match current_player_model.0 {
-                model::PlayerModelType::Donut => model::PlayerModelType::Cube,
-                model::PlayerModelType::Cube => model::PlayerModelType::Donut,
-            };
-
-            commands.entity(player_entity).with_children(|parent| {
-                model::spawn_player_model(
-                    parent,
-                    new_model,
-                    &asset_server,
-                    &mut meshes,
-                    &mut materials,
-                    color.0,
-                );
-            });
-
-            commands
-                .entity(player_entity)
-                .insert(model::CurrentPlayerModel(new_model));
-        }
-    }
 }
 
 #[cfg(test)]

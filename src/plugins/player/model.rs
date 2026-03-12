@@ -1,6 +1,9 @@
 use avian3d::prelude::*;
 use bevy::{ecs::relationship::RelatedSpawnerCommands, prelude::*, scene::SceneInstanceReady};
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
+use leafwing_input_manager::prelude::ActionState;
+
+use crate::plugins::input::PlayerAction;
 
 #[derive(Component)]
 pub struct PlayerModel;
@@ -71,6 +74,56 @@ pub fn spawn_player_model(
                 PlayerModel,
                 Name::new("PlayerModel"),
             ));
+        }
+    }
+}
+
+#[allow(clippy::type_complexity)]
+pub fn swap_player_model(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    player_query: Query<
+        (
+            Entity,
+            &ActionState<PlayerAction>,
+            &CurrentPlayerModel,
+            &Children,
+            &PlayerColor,
+        ),
+        With<super::Player>,
+    >,
+    model_query: Query<Entity, With<PlayerModel>>,
+) {
+    for (player_entity, action_state, current_player_model, childern, color) in player_query.iter()
+    {
+        if action_state.just_pressed(&PlayerAction::SwapModel) {
+            for model_entity in model_query.iter() {
+                if childern.contains(&model_entity) {
+                    commands.entity(model_entity).despawn();
+                }
+            }
+
+            let new_model = match current_player_model.0 {
+                PlayerModelType::Donut => PlayerModelType::Cube,
+                PlayerModelType::Cube => PlayerModelType::Donut,
+            };
+
+            commands.entity(player_entity).with_children(|parent| {
+                spawn_player_model(
+                    parent,
+                    new_model,
+                    &asset_server,
+                    &mut meshes,
+                    &mut materials,
+                    color.0,
+                );
+            });
+
+            commands
+                .entity(player_entity)
+                .insert(CurrentPlayerModel(new_model));
         }
     }
 }
