@@ -1,4 +1,4 @@
-mod model;
+pub mod model;
 
 use avian3d::prelude::*;
 use bevy::prelude::*;
@@ -7,8 +7,9 @@ use bevy_tnua::{
     prelude::*,
 };
 use leafwing_input_manager::prelude::{ActionState, InputMap};
+use serde::{Deserialize, Serialize};
 
-use crate::plugins::input::{default_player1_input_map, default_player2_input_map, PlayerAction};
+use crate::plugins::input::{default_player1_input_map, default_player2_input_map, PlayerActions};
 
 const ROTATION_SPEED: f32 = 2.0;
 
@@ -22,7 +23,15 @@ impl Plugin for PlayerPlugin {
     }
 }
 
-#[derive(Component)]
+pub struct NetworkPlugin;
+impl Plugin for NetworkPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
+        app.add_plugins(model::ModelPlugin);
+    }
+}
+
+#[derive(Component, PartialEq, Serialize, Deserialize)]
 pub struct Player;
 
 #[derive(TnuaScheme)]
@@ -34,7 +43,7 @@ pub enum PlayerControlScheme {
 struct PlayerConfig {
     name: &'static str,
     spawn_pos: Transform,
-    input_map: InputMap<PlayerAction>,
+    input_map: InputMap<PlayerActions>,
     color: Color,
 }
 
@@ -57,40 +66,59 @@ fn spawn_players(
         },
     ];
 
-    for config in players {
-        commands.spawn((
-            config.spawn_pos,
-            Name::new(config.name),
-            config.input_map,
-            model::PlayerColor(config.color),
-            TransformInterpolation,
-            RigidBody::Dynamic,
-            TnuaController::<PlayerControlScheme>::default(),
-            TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(
-                PlayerControlSchemeConfig {
-                    basis: TnuaBuiltinWalkConfig {
-                        // The `float_height` must be greater (even if by little) from the distance between
-                        // the character's center and the lowest point of its collider.
-                        float_height: 1.5,
-                        ..Default::default()
-                    },
-                    jump: TnuaBuiltinJumpConfig {
-                        height: 4.0,
-                        ..Default::default()
-                    },
-                },
-            )),
-            // Tnua can fix the rotation, but the character will still get rotated before it can do so.
-            // By locking the rotation we can prevent this.
-            LockedAxes::ROTATION_LOCKED,
-            // Adding mass & collider so there are no problems when swapping models.
-            Mass(1.0),
-            Collider::capsule(0.5, 1.0),
-            model::CurrentPlayerModel(model::PlayerModelType::Donut),
-            Player,
-            Visibility::default(),
-        ));
+    for PlayerConfig {
+        name,
+        spawn_pos,
+        input_map,
+        color,
+    } in players
+    {
+        commands
+            .spawn(player_bundle(
+                name,
+                spawn_pos,
+                color,
+                &mut control_scheme_configs,
+            ))
+            .insert(input_map);
     }
+}
+
+pub fn player_bundle(
+    name: &'static str,
+    spawn_pos: Transform,
+    color: Color,
+    control_scheme_configs: &mut Assets<PlayerControlSchemeConfig>,
+) -> impl Bundle {
+    (
+        spawn_pos,
+        Name::new(name),
+        model::PlayerColor(color),
+        TransformInterpolation,
+        RigidBody::Dynamic,
+        TnuaController::<PlayerControlScheme>::default(),
+        TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(PlayerControlSchemeConfig {
+            basis: TnuaBuiltinWalkConfig {
+                // The `float_height` must be greater (even if by little) from the distance between
+                // the character's center and the lowest point of its collider.
+                float_height: 1.5,
+                ..Default::default()
+            },
+            jump: TnuaBuiltinJumpConfig {
+                height: 4.0,
+                ..Default::default()
+            },
+        })),
+        // Tnua can fix the rotation, but the character will still get rotated before it can do so.
+        // By locking the rotation we can prevent this.
+        LockedAxes::ROTATION_LOCKED,
+        // Adding mass & collider so there are no problems when swapping models.
+        Mass(1.0),
+        Collider::capsule(0.5, 1.0),
+        model::CurrentPlayerModel(model::PlayerModelType::Donut),
+        Player,
+        Visibility::default(),
+    )
 }
 
 #[allow(clippy::type_complexity)]
@@ -98,7 +126,7 @@ fn apply_controls(
     time: Res<Time>,
     mut query: Query<
         (
-            &ActionState<PlayerAction>,
+            &ActionState<PlayerActions>,
             &mut TnuaController<PlayerControlScheme>,
             &mut Transform,
         ),
@@ -110,13 +138,13 @@ fn apply_controls(
 
         // Direction
         let forward = transform.forward();
-        let forward_pressed = action_state.pressed(&PlayerAction::Forward);
-        let backward_pressed = action_state.pressed(&PlayerAction::Backward);
+        let forward_pressed = action_state.pressed(&PlayerActions::Forward);
+        let backward_pressed = action_state.pressed(&PlayerActions::Backward);
         let direction = movement_direction(forward, forward_pressed, backward_pressed);
 
         // Rotation
-        let left_pressed = action_state.pressed(&PlayerAction::TurnLeft);
-        let right_pressed = action_state.pressed(&PlayerAction::TurnRight);
+        let left_pressed = action_state.pressed(&PlayerActions::TurnLeft);
+        let right_pressed = action_state.pressed(&PlayerActions::TurnRight);
         let rotation = movement_rotation(time.delta_secs(), left_pressed, right_pressed);
         transform.rotate_y(rotation);
 
@@ -126,7 +154,7 @@ fn apply_controls(
         };
 
         // Jumping
-        if action_state.pressed(&PlayerAction::Jump) {
+        if action_state.pressed(&PlayerActions::Jump) {
             controller.action(PlayerControlScheme::Jump(Default::default()));
         }
     }

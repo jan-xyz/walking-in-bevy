@@ -1,16 +1,17 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
+use serde::{Deserialize, Serialize};
 
 pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<PlayerAction>::default());
+        app.add_plugins(InputManagerPlugin::<PlayerActions>::default());
     }
 }
 
-#[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect)]
-pub enum PlayerAction {
+#[derive(Actionlike, PartialEq, Eq, Hash, Clone, Copy, Debug, Reflect, Serialize, Deserialize)]
+pub enum PlayerActions {
     Forward,
     Backward,
     TurnLeft,
@@ -19,28 +20,28 @@ pub enum PlayerAction {
     SwapModel,
 }
 
-pub fn default_player1_input_map() -> InputMap<PlayerAction> {
+pub fn default_player1_input_map() -> InputMap<PlayerActions> {
     InputMap::new([
         // Movement
-        (PlayerAction::Forward, KeyCode::KeyW),
-        (PlayerAction::Backward, KeyCode::KeyS),
-        (PlayerAction::TurnLeft, KeyCode::KeyA),
-        (PlayerAction::TurnRight, KeyCode::KeyD),
+        (PlayerActions::Forward, KeyCode::KeyW),
+        (PlayerActions::Backward, KeyCode::KeyS),
+        (PlayerActions::TurnLeft, KeyCode::KeyA),
+        (PlayerActions::TurnRight, KeyCode::KeyD),
         // Actions
-        (PlayerAction::Jump, KeyCode::ShiftLeft),
-        (PlayerAction::SwapModel, KeyCode::Tab),
+        (PlayerActions::Jump, KeyCode::ShiftLeft),
+        (PlayerActions::SwapModel, KeyCode::Tab),
     ])
 }
 
-pub fn default_player2_input_map() -> InputMap<PlayerAction> {
+pub fn default_player2_input_map() -> InputMap<PlayerActions> {
     InputMap::new([
         // Movement
-        (PlayerAction::Forward, KeyCode::ArrowUp),
-        (PlayerAction::Backward, KeyCode::ArrowDown),
-        (PlayerAction::TurnLeft, KeyCode::ArrowLeft),
-        (PlayerAction::TurnRight, KeyCode::ArrowRight),
+        (PlayerActions::Forward, KeyCode::ArrowUp),
+        (PlayerActions::Backward, KeyCode::ArrowDown),
+        (PlayerActions::TurnLeft, KeyCode::ArrowLeft),
+        (PlayerActions::TurnRight, KeyCode::ArrowRight),
         // Actions
-        (PlayerAction::Jump, KeyCode::ShiftRight),
-        (PlayerAction::SwapModel, KeyCode::Slash),
+        (PlayerActions::Jump, KeyCode::ShiftRight),
+        (PlayerActions::SwapModel, KeyCode::Slash),
     ])
 }

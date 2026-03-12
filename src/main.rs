@@ -1,14 +1,13 @@
 use bevy::prelude::*;
 
-mod plugins;
-use plugins::GamePlugins;
+use walking_in_bevy::plugins::LocalPlugins;
 
 fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
             // Game plugins
-            GamePlugins,
+            LocalPlugins,
         ))
         .run();
 }

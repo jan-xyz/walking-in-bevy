@@ -106,6 +106,9 @@ fn follow_player(
 }
 
 fn calculate_viewport(window: &Window, num_cameras: u32) -> Vec<Viewport> {
+    if num_cameras == 0 {
+        return Vec::new();
+    }
     let width = window.physical_width();
     let height = window.physical_height() / num_cameras;
 

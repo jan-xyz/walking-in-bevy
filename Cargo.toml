@@ -2,13 +2,32 @@
 name = "walking-in-bevy"
 version = "0.1.0"
 edition = "2021"
+default-run = "main"
+
+[lib]
+name = "walking_in_bevy"
+path = "src/lib.rs"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+
+[[bin]]
+name = "client"
+path = "src/client.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
 
 [dependencies]
 bevy = "0.18"
 bevy-tnua-avian3d = "0.10"
-avian3d = "0.5"
+avian3d = { version = "0.5", features = ["serialize"]}
 bevy-tnua = "0.30"
 leafwing-input-manager = "0.20"
+lightyear = { version = "0.26.4", features = ["avian3d", "leafwing", "netcode", "udp"] }
+serde = "1.0.228"
 
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]

@@ -2,19 +2,20 @@ use avian3d::prelude::*;
 use bevy::{ecs::relationship::RelatedSpawnerCommands, prelude::*, scene::SceneInstanceReady};
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use leafwing_input_manager::prelude::ActionState;
+use serde::{Deserialize, Serialize};
 
-use crate::plugins::input::PlayerAction;
+use crate::plugins::input::PlayerActions;
 
 #[derive(Component)]
 pub struct PlayerModel;
 
-#[derive(Component)]
+#[derive(Component, PartialEq, Serialize, Deserialize)]
 pub struct PlayerColor(pub Color);
 
-#[derive(Component)]
+#[derive(Component, PartialEq, Serialize, Deserialize)]
 pub struct CurrentPlayerModel(pub PlayerModelType);
 
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PlayerModelType {
     Donut,
     Cube,
@@ -126,12 +127,12 @@ fn spawn_player_model(
 fn swap_player_model(
     mut commands: Commands,
     player_query: Query<
-        (Entity, &ActionState<PlayerAction>, &CurrentPlayerModel),
+        (Entity, &ActionState<PlayerActions>, &CurrentPlayerModel),
         With<super::Player>,
     >,
 ) {
     for (player_entity, action_state, current_player_model) in player_query.iter() {
-        if action_state.just_pressed(&PlayerAction::SwapModel) {
+        if action_state.just_pressed(&PlayerActions::SwapModel) {
             let new_model = match current_player_model.0 {
                 PlayerModelType::Donut => PlayerModelType::Cube,
                 PlayerModelType::Cube => PlayerModelType::Donut,
