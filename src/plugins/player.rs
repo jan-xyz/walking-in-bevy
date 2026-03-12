@@ -74,28 +74,18 @@ fn spawn_players(
                 // Static config     //
                 ///////////////////////
                 TransformInterpolation,
-                // The player character needs to be configured as a dynamic rigid body of the physics
-                // engine.
                 RigidBody::Dynamic,
-                // This is the Tnua interface component.
                 TnuaController::<PlayerControlScheme>::default(),
-                // The configuration asset can be loaded from a file, but here we are creating it by code
-                // and injecting it to the assets resource.
                 TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(
                     PlayerControlSchemeConfig {
                         basis: TnuaBuiltinWalkConfig {
                             // The `float_height` must be greater (even if by little) from the distance between
                             // the character's center and the lowest point of its collider.
                             float_height: 1.5,
-                            // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they
-                            // have sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn
-                            // what they do.
                             ..Default::default()
                         },
                         jump: TnuaBuiltinJumpConfig {
-                            // The height is the only mandatory field of the jump action.
                             height: 4.0,
-                            // `TnuaBuiltinJump` also has customization fields with sensible defaults.
                             ..Default::default()
                         },
                     },
@@ -103,7 +93,7 @@ fn spawn_players(
                 // Tnua can fix the rotation, but the character will still get rotated before it can do so.
                 // By locking the rotation we can prevent this.
                 LockedAxes::ROTATION_LOCKED,
-                // Adding mass here so there are no problems when swapping models.
+                // Adding mass so there are no problems when swapping models.
                 Mass(1.0),
                 model::CurrentPlayerModel(model::PlayerModelType::Donut),
                 Player,
@@ -149,19 +139,12 @@ fn apply_controls(
         let rotation = movement_rotation(time.delta_secs(), left_pressed, right_pressed);
         transform.rotate_y(rotation);
 
-        // Feed the basis every frame. Even if the player doesn't move - just use `desired_velocity:
-        // Vec3::ZERO`. `TnuaController` starts without a basis, which will make the character collider
-        // just fall.
         controller.basis = TnuaBuiltinWalk {
-            // The `desired_velocity` determines how the character will move.
             desired_motion: direction.normalize_or_zero() * 10.0,
-            // `TnuaBuiltinWalk` has many other fields for customizing the movement - but they have
-            // sensible defaults. Refer to the `TnuaBuiltinWalk`'s documentation to learn what they do.
             ..Default::default()
         };
 
-        // Feed the jump action every frame as long as the player holds the jump button. If the player
-        // stops holding the jump button, simply stop feeding the action.
+        // Jumping
         if action_state.pressed(&PlayerAction::Jump) {
             controller.action(PlayerControlScheme::Jump(Default::default()));
         }

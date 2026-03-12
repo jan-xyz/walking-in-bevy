@@ -15,7 +15,6 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // Spawn the ground.
     commands.spawn((
         Mesh3d(meshes.add(Plane3d::default().mesh().size(128., 128.))),
         MeshMaterial3d(materials.add(Color::WHITE)),
@@ -24,7 +23,6 @@ fn setup(
         Name::new("Ground"),
     ));
 
-    // Spawn a light
     commands.spawn((
         DirectionalLight {
             illuminance: 4000.,
