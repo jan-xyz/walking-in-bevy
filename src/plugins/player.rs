@@ -153,6 +153,7 @@ fn spawn_player(
         });
 }
 // Movement System
+#[allow(clippy::type_complexity)]
 fn apply_controls(
     time: Res<Time>,
     mut query: Query<
@@ -220,6 +221,7 @@ fn movement_rotation(time_delta_sec: f32, left_pressed: bool, right_pressed: boo
     rotation
 }
 
+#[allow(clippy::type_complexity)]
 fn swap_player_model(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
