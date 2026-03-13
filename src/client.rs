@@ -45,7 +45,7 @@ fn main() {
 fn on_player_added(
     trigger: On<Add, Player>,
     predicted: Query<(), With<Predicted>>,
-    authority: Query<(), With<HasAuthority>>,
+    authority: Query<(), With<Controlled>>,
     mut commands: Commands,
     mut control_scheme_configs: ResMut<Assets<PlayerControlSchemeConfig>>,
 ) {
@@ -54,7 +54,6 @@ fn on_player_added(
     }
     let mut entity_commands = commands.entity(trigger.entity);
     entity_commands.insert((
-        default_player1_input_map(),
         TnuaController::<PlayerControlScheme>::default(),
         TnuaConfig::<PlayerControlScheme>(control_scheme_configs.add(PlayerControlSchemeConfig {
             basis: TnuaBuiltinWalkConfig {
