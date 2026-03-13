@@ -47,7 +47,7 @@ impl Plugin for NetworkPlugin {
 
         app.register_component::<LinearVelocity>()
             .add_prediction()
-            .add_should_rollback(linear_velocity_should_rollback);
+            .add_should_rollback(|_, _| false);
 
         app.register_component::<AngularVelocity>().add_prediction();
 
@@ -57,7 +57,7 @@ impl Plugin for NetworkPlugin {
         app.register_component::<FacingAngle>()
             .add_prediction()
             .add_interpolation_with(facing_lerp)
-            .add_should_rollback(facing_should_rollback);
+            .add_should_rollback(|_, _| false);
     }
 }
 
@@ -66,17 +66,9 @@ fn facing_lerp(start: FacingAngle, other: FacingAngle, t: f32) -> FacingAngle {
 }
 
 fn position_should_rollback(this: &Position, that: &Position) -> bool {
-    (this.0 - that.0).length() >= 0.01
+    (this.0 - that.0).length() >= 0.5
 }
 
 fn rotation_should_rollback(this: &Rotation, that: &Rotation) -> bool {
     this.angle_between(*that) >= 0.01
-}
-
-fn facing_should_rollback(this: &FacingAngle, that: &FacingAngle) -> bool {
-    (this.0 - that.0).abs() >= 0.01
-}
-
-fn linear_velocity_should_rollback(this: &LinearVelocity, that: &LinearVelocity) -> bool {
-    (this.0 - that.0).length() >= 0.01
 }

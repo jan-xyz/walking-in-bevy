@@ -127,7 +127,7 @@ pub fn player_bundle(
 
 #[allow(clippy::type_complexity)]
 pub fn apply_controls(
-    time: Res<Time>,
+    time: Res<Time<Fixed>>,
     mut query: Query<
         (
             &ActionState<PlayerActions>,

@@ -1,7 +1,6 @@
 use std::{net::Ipv4Addr, net::SocketAddr, time::Duration};
 
 use avian3d::prelude::{Collider, LockedAxes, Mass, Position, RigidBody};
-use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::prelude::*;
 
 use bevy_tnua::builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig};
@@ -111,7 +110,7 @@ fn connect_to_server(mut commands: Commands) {
 
 #[allow(clippy::type_complexity)]
 pub fn apply_controls(
-    time: Res<Time>,
+    time: Res<Time<Fixed>>,
     mut query: Query<
         (
             &ActionState<PlayerActions>,
