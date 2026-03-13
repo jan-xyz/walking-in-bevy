@@ -17,7 +17,7 @@ impl Plugin for NetworkPlugin {
         // inputs
         app.add_plugins(leafwing::InputPlugin::<PlayerActions> {
             config: InputConfig {
-                rebroadcast_inputs: true,
+                rebroadcast_inputs: false,
                 ..default()
             },
         });
