@@ -23,7 +23,7 @@ path = "src/main.rs"
 [dependencies]
 bevy = "0.18"
 bevy-tnua-avian3d = "0.10"
-avian3d = { version = "0.5", features = ["serialize"]}
+avian3d = { version = "0.5", features = ["serialize", "enhanced-determinism"]}
 bevy-tnua = "0.30"
 leafwing-input-manager = "0.20"
 lightyear = { version = "0.26.4", features = ["avian3d", "leafwing", "debug", "netcode", "udp", "frame_interpolation"] }
