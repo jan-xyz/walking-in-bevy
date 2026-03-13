@@ -66,9 +66,9 @@ fn facing_lerp(start: FacingAngle, other: FacingAngle, t: f32) -> FacingAngle {
 }
 
 fn position_should_rollback(this: &Position, that: &Position) -> bool {
-    (this.0 - that.0).length() >= 0.5
+    (this.0 - that.0).length() >= 1.5
 }
 
 fn rotation_should_rollback(this: &Rotation, that: &Rotation) -> bool {
-    this.angle_between(*that) >= 0.01
+    this.angle_between(*that) >= 1.5
 }
