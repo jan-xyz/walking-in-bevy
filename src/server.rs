@@ -2,14 +2,15 @@ use std::{net::Ipv4Addr, net::SocketAddr, time::Duration};
 
 use bevy::{app::ScheduleRunnerPlugin, prelude::*};
 
+use bevy_tnua::TnuaUserControlsSystems;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::{
-    server::*, Connected, ControlledBy, LocalAddr, NetworkTarget, PredictionTarget, Replicate,
-    ReplicationSender, SendUpdatesMode,
+    server::*, Connected, ControlledBy, InterpolationTarget, LocalAddr, NetworkTarget,
+    PredictionTarget, RemoteId, Replicate, ReplicationSender, SendUpdatesMode,
 };
 use walking_in_bevy::plugins::{
     input::PlayerActions,
-    player::{player_bundle, PlayerControlSchemeConfig},
+    player::{apply_controls, player_bundle, Player, PlayerControlSchemeConfig},
     ServerPlugin,
 };
 
@@ -27,6 +28,7 @@ fn main() {
             // Game plugins
             ServerPlugin,
         ))
+        .add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems))
         .add_systems(Startup, start_server)
         .add_observer(on_client_connected)
         .add_observer(on_new_client)
@@ -59,17 +61,39 @@ fn on_client_connected(
     trigger: On<Add, Connected>,
     mut commands: Commands,
     mut control_scheme_configs: ResMut<Assets<PlayerControlSchemeConfig>>,
+    players: Query<(), With<Player>>,
+    client_query: Query<&RemoteId, With<ClientOf>>,
 ) {
+    let Ok(remote_id) = client_query.get(trigger.entity) else {
+        return;
+    };
+    let client_id = remote_id.0;
+    let player_index = players.iter().len();
+
+    let configs = [
+        (
+            "Player 1",
+            Vec3::new(0.0, 2.0, 0.0),
+            Hsla::new(180.0, 1.0, 0.5, 1.0),
+        ),
+        (
+            "Player 2",
+            Vec3::new(10.0, 2.0, 0.0),
+            Hsla::new(100.0, 1.0, 0.5, 1.0),
+        ),
+    ];
+    let (name, pos, color) = configs[player_index % configs.len()];
     commands
         .spawn(player_bundle(
-            "Player 1",
-            Transform::from_xyz(10.0, 2.0, 0.0),
-            Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0)),
+            name,
+            Transform::from_translation(pos),
+            Color::Hsla(color),
             &mut control_scheme_configs,
         ))
         .insert((
             Replicate::to_clients(NetworkTarget::All),
-            PredictionTarget::to_clients(NetworkTarget::All),
+            PredictionTarget::to_clients(NetworkTarget::Single(client_id)),
+            InterpolationTarget::to_clients(NetworkTarget::AllExceptSingle(client_id)),
             ControlledBy {
                 owner: trigger.entity,
                 lifetime: default(),

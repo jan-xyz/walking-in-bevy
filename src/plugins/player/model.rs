@@ -2,6 +2,7 @@ use avian3d::prelude::*;
 use bevy::{ecs::relationship::RelatedSpawnerCommands, prelude::*, scene::SceneInstanceReady};
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use leafwing_input_manager::prelude::ActionState;
+use lightyear::prelude::{Interpolated, Replicated};
 use serde::{Deserialize, Serialize};
 
 use crate::plugins::input::PlayerActions;
@@ -40,8 +41,18 @@ fn on_player_added(
     children_query: Query<&Children>,
     model_query: Query<Entity, With<PlayerModel>>,
     player_query: Query<(&CurrentPlayerModel, &PlayerColor)>,
+    replicated_query: Query<(), With<Replicated>>,
+    interpolated_query: Query<(), With<Interpolated>>,
+    predicted_query: Query<(), With<lightyear::prelude::Predicted>>,
 ) {
     let player_entity = trigger.event_target();
+
+    if replicated_query.get(player_entity).is_ok()
+        && predicted_query.get(player_entity).is_err()
+        && interpolated_query.get(player_entity).is_err()
+    {
+        return;
+    }
 
     if let Ok(children) = children_query.get(player_entity) {
         for model_entity in model_query.iter() {
@@ -78,8 +89,6 @@ fn spawn_player_model(
             parent
                 .spawn((
                     SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("export.glb"))),
-                    ColliderConstructorHierarchy::new(ColliderConstructor::ConvexHullFromMesh),
-                    // A sensor shape is not strictly necessary, but without it we'll get weird results.
                     TnuaAvian3dSensorShape(Collider::cylinder(0.49, 0.0)),
                     PlayerModel,
                     Name::new("PlayerModel"),
@@ -114,7 +123,6 @@ fn spawn_player_model(
             parent.spawn((
                 Mesh3d(meshes.add(Cuboid::new(1., 1., 1.))),
                 MeshMaterial3d(materials.add(color)),
-                Collider::cuboid(0.5, 0.5, 0.5),
                 TnuaAvian3dSensorShape(Collider::cuboid(0.5, 0.5, 0.5)),
                 PlayerModel,
                 Name::new("PlayerModel"),

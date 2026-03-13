@@ -28,7 +28,7 @@ impl PluginGroup for ServerPlugin {
         PluginGroupBuilder::start::<Self>()
             .add(core::CorePlugin)
             .add(player::NetworkPlugin)
-            .add(physics::PhysicsPlugin)
+            .add(physics::NetworkPlugin)
             .add(network::NetworkPlugin)
     }
 }
@@ -40,7 +40,7 @@ impl PluginGroup for ClientPlugin {
         PluginGroupBuilder::start::<Self>()
             .add(core::CorePlugin)
             .add(player::NetworkPlugin)
-            .add(physics::PhysicsPlugin)
+            .add(physics::NetworkPlugin)
             .add(network::NetworkPlugin)
             .add(camera::CameraPlugin)
     }

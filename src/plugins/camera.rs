@@ -1,6 +1,7 @@
 use bevy::{camera::Viewport, prelude::*, window::WindowResized};
+use lightyear::prelude::Predicted;
 
-use crate::plugins::player::Player;
+use crate::plugins::player::{FacingAngle, Player};
 
 pub struct CameraPlugin;
 
@@ -19,9 +20,13 @@ impl Plugin for CameraPlugin {
 
 fn add_camera_on_player_added(
     trigger: On<Add, Player>,
+    predicted: Query<(), With<Predicted>>,
     mut commands: Commands,
     player: Query<Entity, With<FollowPlayer>>,
 ) {
+    if predicted.get(trigger.entity).is_err() {
+        return;
+    }
     let i = player.count();
     let player = trigger.event_target();
     let camera1 = Camera {
@@ -76,20 +81,21 @@ fn update_viewport(
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn follow_player(
     time: Res<Time>,
     mut camera: Query<(&mut Transform, &FollowPlayer), Without<Player>>,
-    players: Query<&Transform, With<Player>>,
+    players: Query<(&Transform, &FacingAngle), (With<Player>, With<Predicted>)>,
 ) {
     for (mut cam_transform, player_follow) in camera.iter_mut() {
-        let Ok(player_transform) = players.get(player_follow.0) else {
+        let Ok((player_transform, facing)) = players.get(player_follow.0) else {
             continue;
         };
         let distance = 30.0;
         let height = 10.0;
 
-        let target_translation =
-            player_transform.translation + *player_transform.back() * distance + Vec3::Y * height;
+        let back = Quat::from_rotation_y(facing.0) * Vec3::Z;
+        let target_translation = player_transform.translation + back * distance + Vec3::Y * height;
 
         let target_rotation = Transform::from_translation(cam_transform.translation)
             .looking_at(player_transform.translation, Vec3::Y)
@@ -127,6 +133,7 @@ mod tests {
     use std::time::Duration;
 
     use super::*;
+    use lightyear::prelude::Predicted;
 
     fn viewport_eq(a: &Viewport, b: &Viewport) -> bool {
         a.physical_size == b.physical_size && a.physical_position == b.physical_position
@@ -139,7 +146,7 @@ mod tests {
         world.add_observer(add_camera_on_player_added);
 
         // When
-        let player = world.spawn((Transform::default(), Player)).id();
+        let player = world.spawn((Transform::default(), Player, Predicted)).id();
         world.flush();
 
         // Then
@@ -258,7 +265,7 @@ mod tests {
 
             // insert all camera and player bundles to follow
             for transform in input_player_pos.into_iter() {
-                let player = world.spawn((transform, Player)).id();
+                let player = world.spawn((transform, Player, Predicted, FacingAngle(0.0))).id();
 
                 let start = Transform::from_xyz(0.0, 0.0, 0.0);
                 world.spawn((start, FollowPlayer(player)));

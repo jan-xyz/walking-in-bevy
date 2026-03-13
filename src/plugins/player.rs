@@ -19,6 +19,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_players);
         app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
+        app.add_systems(Update, apply_visual_rotation);
         app.add_plugins(model::ModelPlugin);
     }
 }
@@ -26,13 +27,15 @@ impl Plugin for PlayerPlugin {
 pub struct NetworkPlugin;
 impl Plugin for NetworkPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
         app.add_plugins(model::ModelPlugin);
     }
 }
 
 #[derive(Component, PartialEq, Serialize, Deserialize)]
 pub struct Player;
+
+#[derive(Component, Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Deref, DerefMut)]
+pub struct FacingAngle(pub f32);
 
 #[derive(TnuaScheme)]
 #[scheme(basis = TnuaBuiltinWalk)]
@@ -117,36 +120,36 @@ pub fn player_bundle(
         Collider::capsule(0.5, 1.0),
         model::CurrentPlayerModel(model::PlayerModelType::Donut),
         Player,
+        FacingAngle(0.0),
         Visibility::default(),
     )
 }
 
 #[allow(clippy::type_complexity)]
-fn apply_controls(
+pub fn apply_controls(
     time: Res<Time>,
     mut query: Query<
         (
             &ActionState<PlayerActions>,
             &mut TnuaController<PlayerControlScheme>,
-            &mut Transform,
+            &mut FacingAngle,
         ),
         With<Player>,
     >,
 ) {
-    for (action_state, mut controller, mut transform) in query.iter_mut() {
+    for (action_state, mut controller, mut facing) in query.iter_mut() {
         controller.initiate_action_feeding();
-
-        // Direction
-        let forward = transform.forward();
-        let forward_pressed = action_state.pressed(&PlayerActions::Forward);
-        let backward_pressed = action_state.pressed(&PlayerActions::Backward);
-        let direction = movement_direction(forward, forward_pressed, backward_pressed);
 
         // Rotation
         let left_pressed = action_state.pressed(&PlayerActions::TurnLeft);
         let right_pressed = action_state.pressed(&PlayerActions::TurnRight);
-        let rotation = movement_rotation(time.delta_secs(), left_pressed, right_pressed);
-        transform.rotate_y(rotation);
+        facing.0 += movement_rotation(time.delta_secs(), left_pressed, right_pressed);
+
+        // Direction
+        let forward = Quat::from_rotation_y(facing.0) * Vec3::NEG_Z;
+        let forward_pressed = action_state.pressed(&PlayerActions::Forward);
+        let backward_pressed = action_state.pressed(&PlayerActions::Backward);
+        let direction = movement_direction(forward, forward_pressed, backward_pressed);
 
         controller.basis = TnuaBuiltinWalk {
             desired_motion: direction.normalize_or_zero() * 10.0,
@@ -160,18 +163,42 @@ fn apply_controls(
     }
 }
 
-fn movement_direction(forward: Dir3, forward_pressed: bool, backward_pressed: bool) -> Vec3 {
+pub fn apply_visual_rotation(
+    players: Query<(&FacingAngle, &Children), With<Player>>,
+    mut models: Query<&mut Transform, With<model::PlayerModel>>,
+) {
+    for (facing, children) in players.iter() {
+        for child in children.iter() {
+            if let Ok(mut model_transform) = models.get_mut(child) {
+                model_transform.rotation = Quat::from_rotation_y(facing.0);
+            }
+        }
+    }
+}
+
+pub fn debug_forward_gizmo(
+    mut gizmos: Gizmos,
+    players: Query<(&Transform, &FacingAngle), With<Player>>,
+) {
+    for (transform, facing) in players.iter() {
+        let forward = Quat::from_rotation_y(facing.0) * Vec3::NEG_Z;
+        let start = transform.translation + Vec3::Y * 1.5;
+        gizmos.line(start, start + forward * 5.0, Color::srgb(1.0, 0.0, 1.0));
+    }
+}
+
+pub fn movement_direction(forward: Vec3, forward_pressed: bool, backward_pressed: bool) -> Vec3 {
     let mut direction = Vec3::ZERO;
     if forward_pressed {
-        direction += *forward;
+        direction += forward;
     }
     if backward_pressed {
-        direction -= *forward;
+        direction -= forward;
     }
     direction
 }
 
-fn movement_rotation(time_delta_sec: f32, left_pressed: bool, right_pressed: bool) -> f32 {
+pub fn movement_rotation(time_delta_sec: f32, left_pressed: bool, right_pressed: bool) -> f32 {
     let mut rotation: f32 = 0.0;
     if left_pressed {
         rotation += ROTATION_SPEED * time_delta_sec;
@@ -231,7 +258,7 @@ mod test {
             expected,
         } in test_cases
         {
-            let actual = movement_direction(Dir3::Z, forward_pressed, backward_pressed);
+            let actual = movement_direction(Vec3::Z, forward_pressed, backward_pressed);
 
             assert_eq!(
                 actual, expected,

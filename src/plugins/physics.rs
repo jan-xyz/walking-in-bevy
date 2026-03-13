@@ -17,3 +17,22 @@ impl Plugin for PhysicsPlugin {
         ));
     }
 }
+
+pub struct NetworkPlugin;
+
+impl Plugin for NetworkPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins((
+            // Physics library
+            PhysicsPlugins::default()
+                .build()
+                .disable::<PhysicsTransformPlugin>()
+                .disable::<PhysicsInterpolationPlugin>()
+                .disable::<IslandPlugin>()
+                .disable::<IslandSleepingPlugin>(),
+            // Character controller
+            TnuaControllerPlugin::<PlayerControlScheme>::new(FixedUpdate),
+            TnuaAvian3dPlugin::new(FixedUpdate),
+        ));
+    }
+}
