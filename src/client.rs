@@ -1,6 +1,7 @@
 use std::{net::Ipv4Addr, net::SocketAddr, time::Duration};
 
 use avian3d::prelude::{Collider, LockedAxes, Mass, Position, RigidBody};
+use bevy::diagnostic::LogDiagnosticsPlugin;
 use bevy::prelude::*;
 
 use bevy_tnua::builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig};
@@ -32,6 +33,7 @@ fn main() {
             ClientPlugins { tick_duration },
             // Game plugins
             ClientPlugin,
+            DebugUIPlugin,
         ))
         .add_systems(Startup, connect_to_server)
         .add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems))
