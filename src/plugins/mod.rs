@@ -26,8 +26,7 @@ pub struct ServerPlugin;
 impl PluginGroup for ServerPlugin {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(core::CorePlugin)
-            .add(player::NetworkPlugin)
+            .add(core::ServerCorePlugin)
             .add(physics::NetworkPlugin)
             .add(network::NetworkPlugin)
     }

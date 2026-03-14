@@ -1,6 +1,6 @@
 use std::{net::Ipv4Addr, net::SocketAddr, time::Duration};
 
-use bevy::{app::ScheduleRunnerPlugin, prelude::*};
+use bevy::{prelude::*, scene::ScenePlugin};
 
 use bevy_tnua::TnuaUserControlsSystems;
 use leafwing_input_manager::prelude::ActionState;
@@ -19,15 +19,15 @@ fn main() {
 
     App::new()
         .add_plugins((
-            // DefaultPlugins has to be added to correctly derive colliders. This is something that
-            // can be changed in the future, by separating the mesh from the collider, e.g.
-            // by simplifying to a pill collider. Once that is done we can use MinimalPlugins
-            DefaultPlugins.build().disable::<bevy::winit::WinitPlugin>(),
-            ScheduleRunnerPlugin::default(),
+            MinimalPlugins,
+            AssetPlugin::default(),
+            TransformPlugin,
+            ScenePlugin,
             ServerPlugins { tick_duration },
             // Game plugins
             ServerPlugin,
         ))
+        .init_asset::<Mesh>()
         .add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems))
         .add_systems(Startup, start_server)
         .add_observer(on_client_connected)

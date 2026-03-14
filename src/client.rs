@@ -79,6 +79,7 @@ fn on_player_added(
             trigger_change_detection: true,
             ..default()
         },
+        Visibility::default(),
     ));
 
     if authority.get(trigger.entity).is_ok() {

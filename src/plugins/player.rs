@@ -121,7 +121,6 @@ pub fn player_bundle(
         model::CurrentPlayerModel(model::PlayerModelType::Donut),
         Player,
         FacingAngle(0.0),
-        Visibility::default(),
     )
 }
 

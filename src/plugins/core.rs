@@ -6,11 +6,27 @@ pub struct CorePlugin;
 impl Plugin for CorePlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(DirectionalLightShadowMap { size: 4096 })
-            .add_systems(Startup, setup);
+            .add_systems(Startup, (spawn_ground, light_color));
     }
 }
 
-fn setup(
+pub struct ServerCorePlugin;
+
+impl Plugin for ServerCorePlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(Startup, spawn_ground);
+    }
+}
+
+fn spawn_ground(mut commands: Commands) {
+    commands.spawn((
+        RigidBody::Static,
+        Collider::half_space(Vec3::Y),
+        Name::new("Ground Collider"),
+    ));
+}
+
+fn light_color(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
@@ -36,11 +52,6 @@ fn setup(
             Name::new("Ground Tile"),
         ));
     }
-    commands.spawn((
-        RigidBody::Static,
-        Collider::half_space(Vec3::Y),
-        Name::new("Ground Collider"),
-    ));
 
     commands.spawn((
         DirectionalLight {
