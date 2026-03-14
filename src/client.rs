@@ -102,6 +102,7 @@ fn connect_to_server(mut commands: Commands) {
             UdpIo::default(),
             ReplicationReceiver::default(),
             PredictionManager::default(),
+            InputTimelineConfig::new(SyncConfig::default(), InputDelayConfig::balanced()),
         ))
         .id();
 
