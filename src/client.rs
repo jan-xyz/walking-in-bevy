@@ -102,7 +102,15 @@ fn connect_to_server(mut commands: Commands) {
             UdpIo::default(),
             ReplicationReceiver::default(),
             PredictionManager::default(),
-            InputTimelineConfig::new(SyncConfig::default(), InputDelayConfig::balanced()),
+            InputTimelineConfig::new(
+                SyncConfig::default(),
+                // Make sure we have 1 frame of input delay to allow for prediction and rollbacks.
+                InputDelayConfig {
+                    minimum_input_delay_ticks: 1,
+                    maximum_input_delay_before_prediction: 2,
+                    maximum_predicted_ticks: 100,
+                },
+            ),
         ))
         .id();
 

@@ -57,10 +57,25 @@ impl Plugin for NetworkPlugin {
         app.register_component::<FacingAngle>()
             .add_prediction()
             .add_interpolation_with(facing_lerp)
+            .add_linear_correction_fn()
             .add_should_rollback(|a, b| (a.0 - b.0).abs() >= 0.1);
     }
 }
 
 fn facing_lerp(start: FacingAngle, other: FacingAngle, t: f32) -> FacingAngle {
     FacingAngle(start.0 + (other.0 - start.0) * t)
+}
+
+impl Diffable<f32> for FacingAngle {
+    fn base_value() -> Self {
+        FacingAngle(0.0)
+    }
+
+    fn diff(&self, new: &Self) -> f32 {
+        new.0 - self.0
+    }
+
+    fn apply_diff(&mut self, delta: &f32) {
+        self.0 += delta
+    }
 }
