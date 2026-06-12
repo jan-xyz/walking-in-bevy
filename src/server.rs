@@ -6,7 +6,7 @@ use bevy_tnua::TnuaUserControlsSystems;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::{
     server::*, Connected, ControlledBy, InterpolationTarget, LocalAddr, NetworkTarget,
-    PredictionTarget, RemoteId, Replicate, ReplicationSender, SendUpdatesMode,
+    PredictionTarget, RemoteId, Replicate, ReplicationSender,
 };
 use walking_in_bevy::plugins::{
     input::PlayerActions,
@@ -48,13 +48,7 @@ fn start_server(mut commands: Commands) {
 }
 
 fn on_new_client(trigger: On<Add, LinkOf>, mut commands: Commands) {
-    commands
-        .entity(trigger.entity)
-        .insert(ReplicationSender::new(
-            Duration::from_millis(100),
-            SendUpdatesMode::SinceLastAck,
-            false,
-        ));
+    commands.entity(trigger.entity).insert(ReplicationSender);
 }
 
 fn on_client_connected(
