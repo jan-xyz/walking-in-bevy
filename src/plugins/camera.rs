@@ -265,7 +265,9 @@ mod tests {
 
             // insert all camera and player bundles to follow
             for transform in input_player_pos.into_iter() {
-                let player = world.spawn((transform, Player, Predicted, FacingAngle(0.0))).id();
+                let player = world
+                    .spawn((transform, Player, Predicted, FacingAngle(0.0)))
+                    .id();
 
                 let start = Transform::from_xyz(0.0, 0.0, 0.0);
                 world.spawn((start, FollowPlayer(player)));
