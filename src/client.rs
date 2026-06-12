@@ -100,7 +100,7 @@ fn connect_to_server(mut commands: Commands) {
             PeerAddr(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 5000)),
             LocalAddr(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0)),
             UdpIo::default(),
-            ReplicationReceiver::default(),
+            ReplicationReceiver,
             PredictionManager::default(),
             InputTimelineConfig::new(
                 SyncConfig::default(),
