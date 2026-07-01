@@ -56,7 +56,7 @@ fn light_color(
     commands.spawn((
         DirectionalLight {
             illuminance: 4000.,
-            shadows_enabled: true,
+            shadow_maps_enabled: true,
             ..default()
         },
         Transform::default().looking_at(-Vec3::Y, Vec3::Z),

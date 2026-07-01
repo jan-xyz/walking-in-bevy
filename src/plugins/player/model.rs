@@ -1,5 +1,5 @@
 use avian3d::prelude::*;
-use bevy::{ecs::relationship::RelatedSpawnerCommands, prelude::*, scene::SceneInstanceReady};
+use bevy::{ecs::relationship::RelatedSpawnerCommands, gltf::GltfAssetLabel, prelude::*};
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::{Interpolated, Replicated};
@@ -27,7 +27,7 @@ pub struct ModelPlugin;
 impl Plugin for ModelPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_player_added);
-        app.add_systems(Update, swap_player_model);
+        app.add_systems(Update, (swap_player_model, sync_player_model_colors));
     }
 }
 
@@ -86,38 +86,12 @@ fn spawn_player_model(
 ) {
     match model_type {
         PlayerModelType::Donut => {
-            parent
-                .spawn((
-                    SceneRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("export.glb"))),
-                    TnuaAvian3dSensorShape(Collider::cylinder(0.49, 0.0)),
-                    PlayerModel,
-                    Name::new("PlayerModel"),
-                ))
-                .observe(
-                    move |trigger: On<SceneInstanceReady>,
-                          children_query: Query<&Children>,
-                          material_query: Query<&MeshMaterial3d<StandardMaterial>>,
-                          mut commands: Commands,
-                          mut materials: ResMut<Assets<StandardMaterial>>| {
-                        // Collect all descendants recursively
-                        let mut to_visit = vec![trigger.event_target()];
-                        while let Some(entity) = to_visit.pop() {
-                            // Check if this entity has a material
-                            if let Ok(material_handle) = material_query.get(entity) {
-                                if let Some(material) = materials.get(material_handle) {
-                                    let mut new_material = material.clone();
-                                    new_material.base_color = color;
-                                    let new_handle = materials.add(new_material);
-                                    commands.entity(entity).insert(MeshMaterial3d(new_handle));
-                                }
-                            }
-                            // Queue this entity's children for visiting
-                            if let Ok(children) = children_query.get(entity) {
-                                to_visit.extend(children.iter());
-                            }
-                        }
-                    },
-                );
+            parent.spawn((
+                WorldAssetRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("export.glb"))),
+                TnuaAvian3dSensorShape(Collider::cylinder(0.49, 0.0)),
+                PlayerModel,
+                Name::new("PlayerModel"),
+            ));
         }
         PlayerModelType::Cube => {
             parent.spawn((
@@ -127,6 +101,34 @@ fn spawn_player_model(
                 PlayerModel,
                 Name::new("PlayerModel"),
             ));
+        }
+    }
+
+    fn sync_player_model_colors(
+        players: Query<(&PlayerColor, &Children), With<super::Player>>,
+        children_query: Query<&Children>,
+        material_query: Query<&MeshMaterial3d<StandardMaterial>>,
+        mut commands: Commands,
+        mut materials: ResMut<Assets<StandardMaterial>>,
+    ) {
+        for (player_color, children) in players.iter() {
+            let mut to_visit: Vec<Entity> = children.iter().collect();
+            while let Some(entity) = to_visit.pop() {
+                if let Ok(material_handle) = material_query.get(entity) {
+                    if let Some(material) = materials.get(material_handle) {
+                        if material.base_color != player_color.0 {
+                            let mut new_material = material.clone();
+                            new_material.base_color = player_color.0;
+                            commands
+                                .entity(entity)
+                                .insert(MeshMaterial3d(materials.add(new_material)));
+                        }
+                    }
+                }
+                if let Ok(children) = children_query.get(entity) {
+                    to_visit.extend(children.iter());
+                }
+            }
         }
     }
 }
