@@ -13,6 +13,7 @@ use crate::plugins::player::{FacingAngle, Player};
 pub struct NetworkPlugin;
 
 impl Plugin for NetworkPlugin {
+    #[allow(deprecated)]
     fn build(&self, app: &mut App) {
         // inputs
         app.add_plugins(leafwing::InputPlugin::<PlayerActions> {
