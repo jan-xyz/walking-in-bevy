@@ -87,7 +87,9 @@ fn spawn_player_model(
     match model_type {
         PlayerModelType::Donut => {
             parent.spawn((
-                WorldAssetRoot(asset_server.load(GltfAssetLabel::Scene(0).from_asset("export.glb"))),
+                WorldAssetRoot(
+                    asset_server.load(GltfAssetLabel::Scene(0).from_asset("export.glb")),
+                ),
                 TnuaAvian3dSensorShape(Collider::cylinder(0.49, 0.0)),
                 PlayerModel,
                 Name::new("PlayerModel"),
@@ -103,31 +105,31 @@ fn spawn_player_model(
             ));
         }
     }
+}
 
-    fn sync_player_model_colors(
-        players: Query<(&PlayerColor, &Children), With<super::Player>>,
-        children_query: Query<&Children>,
-        material_query: Query<&MeshMaterial3d<StandardMaterial>>,
-        mut commands: Commands,
-        mut materials: ResMut<Assets<StandardMaterial>>,
-    ) {
-        for (player_color, children) in players.iter() {
-            let mut to_visit: Vec<Entity> = children.iter().collect();
-            while let Some(entity) = to_visit.pop() {
-                if let Ok(material_handle) = material_query.get(entity) {
-                    if let Some(material) = materials.get(material_handle) {
-                        if material.base_color != player_color.0 {
-                            let mut new_material = material.clone();
-                            new_material.base_color = player_color.0;
-                            commands
-                                .entity(entity)
-                                .insert(MeshMaterial3d(materials.add(new_material)));
-                        }
+fn sync_player_model_colors(
+    players: Query<(&PlayerColor, &Children), With<super::Player>>,
+    children_query: Query<&Children>,
+    material_query: Query<&MeshMaterial3d<StandardMaterial>>,
+    mut commands: Commands,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+) {
+    for (player_color, children) in players.iter() {
+        let mut to_visit: Vec<Entity> = children.iter().collect();
+        while let Some(entity) = to_visit.pop() {
+            if let Ok(material_handle) = material_query.get(entity) {
+                if let Some(material) = materials.get(material_handle) {
+                    if material.base_color != player_color.0 {
+                        let mut new_material = material.clone();
+                        new_material.base_color = player_color.0;
+                        commands
+                            .entity(entity)
+                            .insert(MeshMaterial3d(materials.add(new_material)));
                     }
                 }
-                if let Ok(children) = children_query.get(entity) {
-                    to_visit.extend(children.iter());
-                }
+            }
+            if let Ok(children) = children_query.get(entity) {
+                to_visit.extend(children.iter());
             }
         }
     }
