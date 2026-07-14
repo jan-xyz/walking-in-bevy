@@ -1,6 +1,6 @@
 use std::{net::Ipv4Addr, net::SocketAddr, time::Duration};
 
-use bevy::{prelude::*, scene::ScenePlugin};
+use bevy::{app::ScheduleRunnerPlugin, prelude::*, scene::ScenePlugin, state::app::StatesPlugin};
 
 use bevy_tnua::TnuaUserControlsSystems;
 use leafwing_input_manager::prelude::ActionState;
@@ -19,7 +19,10 @@ fn main() {
 
     App::new()
         .add_plugins((
-            MinimalPlugins,
+            MinimalPlugins.set(ScheduleRunnerPlugin::run_loop(Duration::from_secs_f64(
+                1.0 / 60.0,
+            ))),
+            StatesPlugin,
             AssetPlugin::default(),
             TransformPlugin,
             ScenePlugin,
