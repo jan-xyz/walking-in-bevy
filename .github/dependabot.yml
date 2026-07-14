@@ -13,6 +13,7 @@ updates:
           - "bevy*"
           - "avian*"
           - "iyes*"
+          - "lightyear*"
     schedule:
       interval: "monthly"
   - package-ecosystem: "rust-toolchain"
