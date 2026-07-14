@@ -1,5 +1,5 @@
 use avian3d::prelude::*;
-use bevy::{light::DirectionalLightShadowMap, prelude::*, state::app::StatesPlugin};
+use bevy::{light::DirectionalLightShadowMap, prelude::*};
 
 pub struct CorePlugin;
 
