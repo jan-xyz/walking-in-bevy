@@ -7,4 +7,4 @@ resources:
 images:
 - name: walking-in-bevy-server
   newName: ghcr.io/jan-xyz/walking-in-bevy-server
-  newTag: v0.0.1
+  newTag: v0.0.2
