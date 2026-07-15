@@ -1485,7 +1485,7 @@ dependencies = [
  "glam 0.32.1",
  "itertools 0.14.0",
  "libm",
- "rand 0.10.1",
+ "rand 0.10.2",
  "rand_distr",
  "serde",
  "thiserror 2.0.18",
@@ -3610,7 +3610,7 @@ dependencies = [
  "bytemuck",
  "encase",
  "libm",
- "rand 0.10.1",
+ "rand 0.10.2",
  "serde_core",
 ]
 
@@ -4748,7 +4748,7 @@ dependencies = [
  "bytes",
  "lightyear_core",
  "lightyear_utils",
- "rand 0.10.1",
+ "rand 0.10.2",
  "tracing",
 ]
 
@@ -4815,7 +4815,7 @@ dependencies = [
  "lightyear_transport",
  "lightyear_utils",
  "no_std_io2",
- "rand 0.10.1",
+ "rand 0.10.2",
  "thiserror 2.0.18",
  "tracing",
  "web-time",
@@ -6499,9 +6499,9 @@ dependencies = [
 
 [[package]]
 name = "rand"
-version = "0.10.1"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d2e8e8bcc7961af1fdac401278c6a831614941f6164ee3bf4ce61b7edb162207"
+checksum = "c7f5fa3a058cd35567ef9bfa5e75732bee0f9e4c55fa90477bef2dfcdbc4be80"
 dependencies = [
  "chacha20 0.10.0",
  "getrandom 0.4.2",
@@ -6549,7 +6549,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4d431c2703ccf129de4d45253c03f49ebb22b97d6ad79ee3ecfc7e3f4862c1d8"
 dependencies = [
  "num-traits",
- "rand 0.10.1",
+ "rand 0.10.2",
 ]
 
 [[package]]
@@ -7999,7 +7999,7 @@ dependencies = [
  "bevy-tnua-avian3d",
  "leafwing-input-manager",
  "lightyear",
- "rand 0.10.1",
+ "rand 0.10.2",
  "serde",
 ]
 
