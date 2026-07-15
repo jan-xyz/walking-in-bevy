@@ -62,7 +62,9 @@ cargo clippy -- -D warnings
 
 ## Deployment
 
-The server can be built as a container image and deployed to Kubernetes:
+The server can be built as a container image and deployed to Kubernetes. The image is packaged from
+a prebuilt binary (no compilation happens inside Docker), so `make docker-build` only produces a
+runnable image on a Linux x86_64 host — do this in CI or on a Linux x86_64 machine:
 
 ```sh
 make docker-build   # builds walking-in-bevy-server:latest
@@ -71,9 +73,12 @@ make k8s-render      # renders k8s/ manifests via kustomize (no cluster required
 make k8s-deploy       # kubectl apply -k k8s/ against your current kube context
 ```
 
-`.github/workflows/server-build-and-deploy.yml` builds and pushes the image to GitHub Container
-Registry and deploys to Kubernetes automatically on every push to `main` that touches server-related
-files. It requires a `KUBECONFIG` repository secret (base64-encoded kubeconfig) to be able to deploy.
+`.github/workflows/server-build-and-deploy.yml` builds the server binary natively on the GitHub
+Actions runner (`ubuntu-latest`, linux/x86_64 — matching the cluster architecture, so no
+cross-compilation is needed) using `Swatinem/rust-cache` for fast incremental builds, packages it
+into the container image, pushes it to GitHub Container Registry, and deploys to Kubernetes
+automatically on every push to `main` that touches server-related files. It requires a `KUBECONFIG`
+repository secret (base64-encoded kubeconfig) to be able to deploy.
 
 ## Tutorials & References
 

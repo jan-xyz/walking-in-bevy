@@ -60,6 +60,22 @@ jobs:
           git tag "$NEW_TAG"
           git push origin "$NEW_TAG"
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build server binary
+        run: cargo build --release --bin server
+
+      - name: Stage binary for Docker build context
+        run: |
+          mkdir -p dist
+          cp target/release/server dist/server
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -73,13 +89,12 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v7
         with:
-          context: .
+          context: dist
+          file: Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/walking-in-bevy-server:${{ steps.version.outputs.new_version }}
             ghcr.io/${{ github.repository_owner }}/walking-in-bevy-server:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v3

@@ -144,23 +144,42 @@ When editing, check the module path (`player::NetworkPlugin` vs `network::Networ
 
 The dedicated server can be containerized and deployed to Kubernetes:
 
-- `Dockerfile` is a two-stage build: `rust:1.97-slim-bookworm` compiles `--bin server` in release
-  mode, then the binary is copied into `gcr.io/distroless/cc-debian12:nonroot` (uid/gid 65532,
-  matching the Deployment's `securityContext`). The `assets/` directory is intentionally **not**
-  copied into the image — the server's plugin group (`ServerPlugin` in `plugins/mod.rs`) never adds
-  `player::PlayerPlugin`/`player::NetworkPlugin`, so `player/model.rs`'s glTF-loading observer never
-  registers server-side and the donut model is never loaded at runtime.
+- **No cross-compilation, deliberately.** GitHub Actions' `ubuntu-latest` runners are linux/x86_64,
+  and the target cluster is linux/x86_64 too — builder arch and deploy arch already match. The CI
+  workflow therefore runs a plain native `cargo build --release --bin server` on the runner (cached
+  with `Swatinem/rust-cache@v2`, the standard/most-effective Rust build cache) and `Dockerfile` does
+  **no compilation at all** — it's a single `COPY` of the prebuilt binary into
+  `gcr.io/distroless/cc-debian12:nonroot` (uid/gid 65532, matching the Deployment's
+  `securityContext`). This was tried the other way first (multi-stage Docker build compiling inside
+  the container, `cross`/QEMU for arch parity) and abandoned: it added real complexity (emulated
+  builds are slow and BuildKit's registry/GHA cache is far less effective than `Swatinem/rust-cache`
+  for a dependency-heavy crate like this one) to solve a cross-compilation problem that doesn't
+  actually exist here. If the cluster architecture ever changes, or CI moves to non-x86_64 runners,
+  this assumption needs revisiting.
+- The `assets/` directory is intentionally **not** copied into the image — the server's plugin group
+  (`ServerPlugin` in `plugins/mod.rs`) never adds `player::PlayerPlugin`/`player::NetworkPlugin`, so
+  `player/model.rs`'s glTF-loading observer never registers server-side and the donut model is never
+  loaded at runtime.
 - The compiled server binary only dynamically links `libc`/`libm`/`libgcc_s` (verified with `ldd`)
   even though the crate pulls in bevy's audio/window/render backends (ALSA, Wayland, X11, Vulkan) as
   compile-time dependencies — the linker's `--as-needed` behavior drops those `DT_NEEDED` entries
   since `MinimalPlugins` never calls into that dead code. If you add real server-side rendering/audio
   usage this may no longer hold; re-run `ldd` on the built binary before trusting the minimal
   distroless base still works.
+- The Docker build context is the `dist/` directory (just the single `server` binary), not the repo
+  root — `make server-binary` (or the CI step of the same name) builds the release binary and copies
+  it to `dist/server` before `docker build` ever runs. Building `dist/server` only produces a
+  runnable Linux binary when run on a Linux x86_64 host; running `make docker-build` on macOS/Windows
+  will build a container with a binary that won't execute (wrong OS/format) — do server container
+  builds in CI or on a Linux x86_64 dev box.
 - `k8s/deployment.yaml` + `k8s/service.yaml` + `k8s/kustomization.yaml`: no `Ingress` is defined —
   lightyear's `netcode` transport is raw UDP, and the cluster's ingress controller (Traefik, used
   elsewhere in the jan-xyz infra) only routes HTTP(S). The `Service` is `type: LoadBalancer` exposing
   UDP port 5000 directly. There are also no `readinessProbe`/`livenessProbe` entries — Kubernetes has
-  no built-in UDP probe type and the server exposes no HTTP endpoint to probe.
+  no built-in UDP probe type and the server exposes no HTTP endpoint to probe. The kustomization
+  targets the `janxyz` namespace (not a dedicated namespace for this repo) because the deploying
+  service account's RBAC is scoped there, matching the `lilith`/`deckard` services deployed from the
+  separate `janxyz` monorepo.
 - `.github/workflows/server-build-and-deploy.yml` builds/pushes to GitHub Container Registry
   (`ghcr.io/<owner>/walking-in-bevy-server`, auth via the built-in `GITHUB_TOKEN`, no registry
   secrets needed) and deploys via `kubectl apply -k k8s/`, gated on a `secrets.KUBECONFIG` (base64
@@ -169,7 +188,8 @@ The dedicated server can be containerized and deployed to Kubernetes:
   back into `k8s/kustomization.yaml` via `kustomize edit set image`. This mirrors the versioning
   pattern used by the `lilith`/`deckard` services in the separate `janxyz` monorepo, adapted for a
   single-service repo (no path-based job filtering needed).
-- Local dev/testing: `make docker-build` builds the image, `make docker-run` runs it with UDP 5000
+- Local dev/testing: `make server-binary` builds the release binary into `dist/` (Linux x86_64 host
+  only, see above), `make docker-build` builds the image, `make docker-run` runs it with UDP 5000
   published, `make k8s-render` runs `kubectl kustomize k8s/` to sanity-check the manifests without
   applying them, `make k8s-deploy` applies them to whatever cluster your current kubeconfig context
   points at.

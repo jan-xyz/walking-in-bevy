@@ -1,6 +1,7 @@
-.PHONY: build test fmt lint run run-server run-client docker-build docker-run k8s-render k8s-deploy clean
+.PHONY: build test fmt lint run run-server run-client server-binary docker-build docker-run k8s-render k8s-deploy clean
 
 IMAGE ?= walking-in-bevy-server:latest
+DIST := dist
 
 build:
 	cargo build
@@ -23,8 +24,15 @@ run-server:
 run-client:
 	cargo run --bin client
 
-docker-build:
-	docker build -t $(IMAGE) .
+# Produces a Linux x86_64 binary. Only run this on a Linux x86_64 host (like
+# CI) — on other hosts/architectures the binary won't run in the container.
+server-binary:
+	cargo build --release --bin server
+	mkdir -p $(DIST)
+	cp target/release/server $(DIST)/server
+
+docker-build: server-binary
+	docker build -f Dockerfile -t $(IMAGE) $(DIST)
 
 docker-run: docker-build
 	docker run --rm -p 5000:5000/udp $(IMAGE)
@@ -37,3 +45,4 @@ k8s-deploy:
 
 clean:
 	cargo clean
+	rm -rf $(DIST)
