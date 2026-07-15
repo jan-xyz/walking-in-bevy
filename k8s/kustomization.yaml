@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: walking-in-bevy
+resources:
+  - deployment.yaml
+  - service.yaml
+images:
+  - name: walking-in-bevy-server
+    newName: ghcr.io/jan-xyz/walking-in-bevy-server
+    newTag: latest

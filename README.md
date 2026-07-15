@@ -54,6 +54,21 @@ cargo fmt --check
 cargo clippy -- -D warnings
 ```
 
+## Deployment
+
+The server can be built as a container image and deployed to Kubernetes:
+
+```sh
+make docker-build   # builds walking-in-bevy-server:latest
+make docker-run      # runs it locally with UDP 5000 published
+make k8s-render      # renders k8s/ manifests via kustomize (no cluster required)
+make k8s-deploy       # kubectl apply -k k8s/ against your current kube context
+```
+
+`.github/workflows/server-build-and-deploy.yml` builds and pushes the image to GitHub Container
+Registry and deploys to Kubernetes automatically on every push to `main` that touches server-related
+files. It requires a `KUBECONFIG` repository secret (base64-encoded kubeconfig) to be able to deploy.
+
 ## Tutorials & References
 
 - [Blender 4 Donut Tutorial](https://www.youtube.com/watch?v=4haAdmHqGOw)
