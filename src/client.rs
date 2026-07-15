@@ -1,4 +1,8 @@
-use std::{net::Ipv4Addr, net::SocketAddr, time::Duration};
+use std::{
+    env,
+    net::{Ipv4Addr, SocketAddr, ToSocketAddrs},
+    time::Duration,
+};
 
 use avian3d::prelude::{Collider, LockedAxes, Mass, Position, RigidBody};
 use bevy::prelude::*;
@@ -87,9 +91,20 @@ fn on_player_added(
     }
 }
 
+const DEFAULT_SERVER_ADDR: &str = "imperius.janxyz.de:5000";
+
+fn resolve_server_addr() -> SocketAddr {
+    let addr = env::var("SERVER_ADDR").unwrap_or_else(|_| DEFAULT_SERVER_ADDR.to_string());
+    addr.to_socket_addrs()
+        .unwrap_or_else(|error| panic!("Failed to resolve server address {addr}: {error}"))
+        .next()
+        .unwrap_or_else(|| panic!("Server address {addr} resolved to no addresses"))
+}
+
 fn connect_to_server(mut commands: Commands) {
+    let server_addr = resolve_server_addr();
     let auth = Authentication::Manual {
-        server_addr: SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 5000),
+        server_addr,
         client_id: rand::random::<u64>(),
         private_key: [0u8; 32],
         protocol_id: 0,
@@ -97,7 +112,7 @@ fn connect_to_server(mut commands: Commands) {
     let entity = commands
         .spawn((
             NetcodeClient::new(auth, NetcodeConfig::default()).unwrap(),
-            PeerAddr(SocketAddr::new(Ipv4Addr::LOCALHOST.into(), 5000)),
+            PeerAddr(server_addr),
             LocalAddr(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 0)),
             UdpIo::default(),
             ReplicationReceiver,

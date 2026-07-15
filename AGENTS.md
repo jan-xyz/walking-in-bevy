@@ -15,7 +15,11 @@ Three binaries share one library crate (`walking_in_bevy`, `src/lib.rs`):
 - `src/client.rs` (bin `client`) — networked client that connects to `server` over UDP (netcode) and renders.
 
 Run `cargo run --bin server` then `cargo run --bin client` (one or more) for networked play, or
-plain `cargo run` for local split-screen. Server listens on `127.0.0.1:5000` (hardcoded).
+plain `cargo run` for local split-screen. By default `client` connects to the deployed server at
+`imperius.janxyz.de:5000` (DNS-resolved at startup, see `src/client.rs::resolve_server_addr`);
+override with the `SERVER_ADDR` env var (e.g. `SERVER_ADDR=127.0.0.1:5000`) to point at a local
+`server` instance instead. The server itself always listens on `0.0.0.0:5000` (hardcoded in
+`src/server.rs`).
 
 ## Commands
 

@@ -19,16 +19,22 @@ A 3D multiplayer game built with [Bevy](https://bevyengine.org/). Players run ar
 
 ### Run (Networked Multiplayer)
 
-Start the server, then connect one or more clients:
+A server is deployed at `imperius.janxyz.de:5000` — running `cargo run --bin client` connects there
+by default. Override with the `SERVER_ADDR` environment variable to point at a local or different
+server instead:
 
 ```sh
 git lfs pull   # fetch binary assets if not already present
 
+# connect to the deployed server
+cargo run --bin client
+
+# or run everything locally
 # Terminal 1: start the server
 cargo run --bin server
 
-# Terminal 2: start a client
-cargo run --bin client
+# Terminal 2: start a client pointed at localhost
+SERVER_ADDR=127.0.0.1:5000 cargo run --bin client
 ```
 
 Each client controls one player. The server spawns players at different positions with different colors. Your own player uses client-side prediction; other players are smoothly interpolated from the server state.
