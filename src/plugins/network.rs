@@ -1,7 +1,6 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use lightyear::avian3d::plugin::{AvianReplicationMode, LightyearAvianPlugin};
-use lightyear::frame_interpolation::FrameInterpolationPlugin;
+use lightyear::avian3d::plugin::LightyearAvianPlugin;
 use lightyear::input::config::InputConfig;
 use lightyear::prelude::input::leafwing;
 use lightyear::prelude::*;
@@ -25,26 +24,22 @@ impl Plugin for NetworkPlugin {
 
         // physics
         app.add_plugins(LightyearAvianPlugin {
-            replication_mode: AvianReplicationMode::Position,
+            register_physics_components: false,
             ..default()
         });
-
-        // interpolation
-        app.add_plugins(FrameInterpolationPlugin::<Position>::default());
-        app.add_plugins(FrameInterpolationPlugin::<FacingAngle>::default());
 
         // components
         app.register_component::<Position>()
             .add_prediction()
             .add_should_rollback(|a, b| (a.0 - b.0).length() >= 1.0)
             .add_linear_interpolation()
-            .add_linear_correction_fn();
+            .add_linear_correction();
 
         app.register_component::<Rotation>()
             .add_prediction()
             .add_should_rollback(|a, b| a.angle_between(*b) >= 0.01)
             .add_linear_interpolation()
-            .add_linear_correction_fn();
+            .add_linear_correction();
 
         app.register_component::<LinearVelocity>()
             .add_prediction()
@@ -58,7 +53,7 @@ impl Plugin for NetworkPlugin {
         app.register_component::<FacingAngle>()
             .add_prediction()
             .add_interpolation_with(facing_lerp)
-            .add_linear_correction_fn()
+            .add_linear_correction()
             .add_should_rollback(|a, b| (a.0 - b.0).abs() >= 0.1);
     }
 }
