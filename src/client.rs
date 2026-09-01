@@ -4,7 +4,7 @@ use std::{
     time::Duration,
 };
 
-use avian3d::prelude::{Collider, LockedAxes, Mass, Position, RigidBody};
+use avian3d::prelude::{Collider, LockedAxes, Mass, RigidBody};
 use bevy::prelude::*;
 
 use bevy_tnua::builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig};
@@ -75,14 +75,7 @@ fn on_player_added(
         Collider::capsule(0.5, 1.0),
         Mass(1.0),
         LockedAxes::ROTATION_LOCKED,
-        FrameInterpolate::<Position> {
-            trigger_change_detection: true,
-            ..default()
-        },
-        FrameInterpolate::<FacingAngle> {
-            trigger_change_detection: true,
-            ..default()
-        },
+        FrameInterpolate,
         Visibility::default(),
     ));
 
@@ -117,6 +110,7 @@ fn connect_to_server(mut commands: Commands) {
             UdpIo::default(),
             ReplicationReceiver,
             PredictionManager::default(),
+            PingManager::default(),
             InputTimelineConfig::new(
                 SyncConfig::default(),
                 // Make sure we have 1 frame of input delay to allow for prediction and rollbacks.

@@ -1,7 +1,6 @@
 use avian3d::prelude::*;
 use bevy::prelude::*;
-use lightyear::avian3d::plugin::{AvianReplicationMode, LightyearAvianPlugin};
-use lightyear::frame_interpolation::FrameInterpolationPlugin;
+use lightyear::avian3d::plugin::LightyearAvianPlugin;
 use lightyear::input::config::InputConfig;
 use lightyear::prelude::input::leafwing;
 use lightyear::prelude::*;
@@ -24,10 +23,10 @@ impl Plugin for NetworkPlugin {
         });
 
         // physics
-        app.add_plugins(LightyearAvianPlugin::default());
-
-        // interpolation
-        app.add_plugins(FrameInterpolationPlugin);
+        app.add_plugins(LightyearAvianPlugin {
+            register_physics_components: false,
+            ..default()
+        });
 
         // components
         app.register_component::<Position>()
