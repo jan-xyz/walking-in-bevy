@@ -41,7 +41,10 @@ fn main() {
 fn start_server(mut commands: Commands) {
     let entity = commands
         .spawn((
-            NetcodeServer::new(NetcodeConfig::default()),
+            NetcodeServer::new(NetcodeConfig {
+                server_addr_check: false,
+                ..default()
+            }),
             LocalAddr(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 5000)),
             ServerUdpIo::default(),
         ))
