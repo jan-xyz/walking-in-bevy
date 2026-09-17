@@ -31,10 +31,10 @@ impl Plugin for NetworkPlugin {
     }
 }
 
-#[derive(Component, PartialEq, Serialize, Deserialize)]
+#[derive(Component, Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Player;
 
-#[derive(Component, Debug, Clone, Copy, PartialEq, Serialize, Deserialize, Deref, DerefMut)]
+#[derive(Component, Serialize, Deserialize, Deref, DerefMut, Debug, Clone, Copy, PartialEq)]
 pub struct FacingAngle(pub f32);
 
 #[derive(TnuaScheme)]
