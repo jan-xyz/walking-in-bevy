@@ -1,4 +1,4 @@
-use crate::shared::player::PlayerControlScheme;
+use crate::player::PlayerControlScheme;
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_tnua::TnuaControllerPlugin;

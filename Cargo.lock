@@ -8185,7 +8185,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "walking-in-bevy"
+name = "walking-in-bevy-client"
 version = "0.1.0"
 dependencies = [
  "avian3d",
@@ -8195,6 +8195,30 @@ dependencies = [
  "leafwing-input-manager",
  "lightyear",
  "rand 0.10.2",
+ "walking-in-bevy-shared",
+]
+
+[[package]]
+name = "walking-in-bevy-server"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "bevy-tnua",
+ "leafwing-input-manager",
+ "lightyear",
+ "walking-in-bevy-shared",
+]
+
+[[package]]
+name = "walking-in-bevy-shared"
+version = "0.1.0"
+dependencies = [
+ "avian3d",
+ "bevy",
+ "bevy-tnua",
+ "bevy-tnua-avian3d",
+ "leafwing-input-manager",
+ "lightyear",
  "serde",
 ]
 

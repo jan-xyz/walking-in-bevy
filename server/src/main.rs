@@ -13,8 +13,10 @@ use lightyear::prelude::{
     server::*, Connected, ControlledBy, InterpolationTarget, LocalAddr, NetworkTarget,
     PredictionTarget, RemoteId, Replicate, ReplicationSender,
 };
-use walking_in_bevy::shared::player::{apply_controls, player_bundle, Player, PlayerActions};
-use walking_in_bevy::shared::{self, player::PlayerControlSchemeConfig};
+use walking_in_bevy_shared::player::{
+    apply_controls, player_bundle, Player, PlayerActions, PlayerControlSchemeConfig,
+};
+use walking_in_bevy_shared::{core, network, physics};
 
 fn main() {
     let tick_duration = Duration::from_secs_f64(1.0 / 60.0);
@@ -45,9 +47,9 @@ pub struct ServerPlugin;
 impl PluginGroup for ServerPlugin {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(shared::core::LevelMeshPlugin)
-            .add(shared::physics::PhysicsPlugin)
-            .add(shared::network::NetworkPlugin)
+            .add(core::LevelMeshPlugin)
+            .add(physics::PhysicsPlugin)
+            .add(network::NetworkPlugin)
     }
 }
 

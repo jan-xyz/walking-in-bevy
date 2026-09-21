@@ -4,8 +4,7 @@ use lightyear::input::config::InputConfig;
 use lightyear::prelude::input::leafwing;
 use lightyear::prelude::*;
 
-use crate::shared::player::{CurrentPlayerModel, PlayerActions, PlayerColor};
-use crate::shared::player::{FacingAngle, Player};
+use crate::player::{CurrentPlayerModel, FacingAngle, Player, PlayerActions, PlayerColor};
 
 pub struct NetworkPlugin;
 

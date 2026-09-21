@@ -1,15 +1,7 @@
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 
-use crate::shared::player::PlayerActions;
-
-pub struct InputPlugin;
-
-impl Plugin for InputPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<PlayerActions>::default());
-    }
-}
+use walking_in_bevy_shared::player::PlayerActions;
 
 pub fn default_player1_input_map() -> InputMap<PlayerActions> {
     InputMap::new([

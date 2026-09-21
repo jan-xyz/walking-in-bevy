@@ -4,7 +4,7 @@ use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::{Interpolated, Replicated};
 
-use crate::shared::player::{
+use walking_in_bevy_shared::player::{
     CurrentPlayerModel, FacingAngle, Player, PlayerActions, PlayerColor, PlayerModel,
     PlayerModelType,
 };

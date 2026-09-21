@@ -4,6 +4,10 @@ use std::{
     time::Duration,
 };
 
+mod camera;
+mod input;
+mod model;
+
 use avian3d::prelude::{Collider, LockedAxes, Mass, RigidBody};
 use bevy::{app::PluginGroupBuilder, prelude::*};
 
@@ -18,18 +22,12 @@ use lightyear::{
     prelude::{client::*, PeerAddr},
 };
 
-use walking_in_bevy::client::{input::default_player1_input_map, model};
-use walking_in_bevy::shared::core;
-use walking_in_bevy::shared::network;
-use walking_in_bevy::shared::physics;
-use walking_in_bevy::shared::player::{
-    debug_forward_gizmo, movement_direction, movement_rotation, FacingAngle, Player,
+use crate::{input::default_player1_input_map, model::apply_visual_rotation};
+use walking_in_bevy_shared::player::{
+    debug_forward_gizmo, movement_direction, movement_rotation, FacingAngle, Player, PlayerActions,
     PlayerControlScheme, PlayerControlSchemeConfig,
 };
-use walking_in_bevy::{
-    client::{camera, model::apply_visual_rotation},
-    shared::player::PlayerActions,
-};
+use walking_in_bevy_shared::{core, network, physics};
 
 fn main() {
     let tick_duration = Duration::from_secs_f64(1.0 / 60.0);

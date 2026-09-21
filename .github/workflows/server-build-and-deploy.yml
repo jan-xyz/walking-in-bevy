@@ -5,7 +5,9 @@ on:
     branches:
       - main
     paths:
-      - "src/**"
+      - "client/**"
+      - "server/**"
+      - "shared/**"
       - "Cargo.toml"
       - "Cargo.lock"
       - "Dockerfile"

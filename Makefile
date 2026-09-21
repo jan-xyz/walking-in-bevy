@@ -17,7 +17,7 @@ lint:
 	cargo clippy -- -D warnings
 
 run:
-	cargo run
+	cargo run --bin server
 
 run-server:
 	cargo run --bin server

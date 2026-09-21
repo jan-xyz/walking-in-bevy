@@ -1,7 +1,7 @@
 use bevy::{camera::Viewport, prelude::*, window::WindowResized};
 use lightyear::prelude::Predicted;
 
-use crate::shared::player::{FacingAngle, Player};
+use walking_in_bevy_shared::player::{FacingAngle, Player};
 
 pub struct CameraPlugin;
 
