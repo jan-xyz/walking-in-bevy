@@ -4,7 +4,8 @@ IMAGE ?= walking-in-bevy-server:latest
 DIST := dist
 
 build:
-	cargo build
+	cargo build --bin server
+	cargo build --bin client
 
 test:
 	cargo test

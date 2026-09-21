@@ -3,24 +3,11 @@ use bevy::{ecs::relationship::RelatedSpawnerCommands, gltf::GltfAssetLabel, prel
 use bevy_tnua_avian3d::TnuaAvian3dSensorShape;
 use leafwing_input_manager::prelude::ActionState;
 use lightyear::prelude::{Interpolated, Replicated};
-use serde::{Deserialize, Serialize};
 
-use crate::plugins::input::PlayerActions;
-
-#[derive(Component)]
-pub struct PlayerModel;
-
-#[derive(Component, PartialEq, Serialize, Deserialize)]
-pub struct PlayerColor(pub Color);
-
-#[derive(Component, PartialEq, Serialize, Deserialize)]
-pub struct CurrentPlayerModel(pub PlayerModelType);
-
-#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-pub enum PlayerModelType {
-    Donut,
-    Cube,
-}
+use crate::shared::player::{
+    CurrentPlayerModel, FacingAngle, Player, PlayerActions, PlayerColor, PlayerModel,
+    PlayerModelType,
+};
 
 pub struct ModelPlugin;
 
@@ -28,6 +15,18 @@ impl Plugin for ModelPlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(on_player_added);
         app.add_systems(Update, (swap_player_model, sync_player_model_colors));
+    }
+}
+pub fn apply_visual_rotation(
+    players: Query<(&FacingAngle, &Children), With<Player>>,
+    mut models: Query<&mut Transform, With<PlayerModel>>,
+) {
+    for (facing, children) in players.iter() {
+        for child in children.iter() {
+            if let Ok(mut model_transform) = models.get_mut(child) {
+                model_transform.rotation = Quat::from_rotation_y(facing.0);
+            }
+        }
     }
 }
 
@@ -108,7 +107,7 @@ fn spawn_player_model(
 }
 
 fn sync_player_model_colors(
-    players: Query<(&PlayerColor, &Children), With<super::Player>>,
+    players: Query<(&PlayerColor, &Children), With<Player>>,
     children_query: Query<&Children>,
     material_query: Query<&MeshMaterial3d<StandardMaterial>>,
     mut commands: Commands,
@@ -138,10 +137,7 @@ fn sync_player_model_colors(
 #[allow(clippy::type_complexity)]
 fn swap_player_model(
     mut commands: Commands,
-    player_query: Query<
-        (Entity, &ActionState<PlayerActions>, &CurrentPlayerModel),
-        With<super::Player>,
-    >,
+    player_query: Query<(Entity, &ActionState<PlayerActions>, &CurrentPlayerModel), With<Player>>,
 ) {
     for (player_entity, action_state, current_player_model) in player_query.iter() {
         if action_state.just_pressed(&PlayerActions::SwapModel) {

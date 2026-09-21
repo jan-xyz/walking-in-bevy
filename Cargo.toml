@@ -2,7 +2,7 @@
 name = "walking-in-bevy"
 version = "0.1.0"
 edition = "2021"
-default-run = "main"
+default-run = "server"
 
 [lib]
 name = "walking_in_bevy"
@@ -10,15 +10,11 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "server"
-path = "src/server.rs"
+path = "src/server_main.rs"
 
 [[bin]]
 name = "client"
-path = "src/client.rs"
-
-[[bin]]
-name = "main"
-path = "src/main.rs"
+path = "src/client_main.rs"
 
 [dependencies]
 bevy = "0.19"

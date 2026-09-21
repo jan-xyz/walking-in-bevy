@@ -1,18 +1,18 @@
 use avian3d::prelude::*;
 use bevy::{light::DirectionalLightShadowMap, prelude::*};
 
-pub struct CorePlugin;
+pub struct LevelAmbientPlugin;
 
-impl Plugin for CorePlugin {
+impl Plugin for LevelAmbientPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(DirectionalLightShadowMap { size: 4096 })
-            .add_systems(Startup, (spawn_ground, light_color));
+            .add_systems(Startup, light_color);
     }
 }
 
-pub struct ServerCorePlugin;
+pub struct LevelMeshPlugin;
 
-impl Plugin for ServerCorePlugin {
+impl Plugin for LevelMeshPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, spawn_ground);
     }

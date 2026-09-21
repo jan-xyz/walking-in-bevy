@@ -1,35 +1,13 @@
-pub mod model;
-
 use avian3d::prelude::*;
 use bevy::prelude::*;
 use bevy_tnua::{
     builtins::{TnuaBuiltinJumpConfig, TnuaBuiltinWalkConfig},
     prelude::*,
 };
-use leafwing_input_manager::prelude::{ActionState, InputMap};
+use leafwing_input_manager::{prelude::ActionState, Actionlike};
 use serde::{Deserialize, Serialize};
 
-use crate::plugins::input::{default_player1_input_map, default_player2_input_map, PlayerActions};
-
 const ROTATION_SPEED: f32 = 2.0;
-
-pub struct PlayerPlugin;
-
-impl Plugin for PlayerPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, spawn_players);
-        app.add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems));
-        app.add_systems(Update, apply_visual_rotation);
-        app.add_plugins(model::ModelPlugin);
-    }
-}
-
-pub struct NetworkPlugin;
-impl Plugin for NetworkPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(model::ModelPlugin);
-    }
-}
 
 #[derive(Component, Serialize, Deserialize, PartialEq, Debug, Clone)]
 pub struct Player;
@@ -43,48 +21,29 @@ pub enum PlayerControlScheme {
     Jump(TnuaBuiltinJump),
 }
 
-struct PlayerConfig {
-    name: &'static str,
-    spawn_pos: Transform,
-    input_map: InputMap<PlayerActions>,
-    color: Color,
+#[derive(Component)]
+pub struct PlayerModel;
+
+#[derive(Component, PartialEq, Serialize, Deserialize)]
+pub struct PlayerColor(pub Color);
+
+#[derive(Component, PartialEq, Serialize, Deserialize)]
+pub struct CurrentPlayerModel(pub PlayerModelType);
+
+#[derive(Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum PlayerModelType {
+    Donut,
+    Cube,
 }
 
-fn spawn_players(
-    mut commands: Commands,
-    mut control_scheme_configs: ResMut<Assets<PlayerControlSchemeConfig>>,
-) {
-    let players = [
-        PlayerConfig {
-            name: "Player 1",
-            spawn_pos: Transform::from_xyz(0., 2., 0.),
-            input_map: default_player1_input_map(),
-            color: Color::Hsla(Hsla::new(180.0, 1.0, 0.5, 1.0)),
-        },
-        PlayerConfig {
-            name: "Player 2",
-            spawn_pos: Transform::from_xyz(10., 2., 0.),
-            input_map: default_player2_input_map(),
-            color: Color::Hsla(Hsla::new(100.0, 1.0, 0.5, 1.0)),
-        },
-    ];
-
-    for PlayerConfig {
-        name,
-        spawn_pos,
-        input_map,
-        color,
-    } in players
-    {
-        commands
-            .spawn(player_bundle(
-                name,
-                spawn_pos,
-                color,
-                &mut control_scheme_configs,
-            ))
-            .insert(input_map);
-    }
+#[derive(PartialEq, Eq, Hash, Clone, Copy, Debug, Actionlike, Reflect, Serialize, Deserialize)]
+pub enum PlayerActions {
+    Forward,
+    Backward,
+    TurnLeft,
+    TurnRight,
+    Jump,
+    SwapModel,
 }
 
 pub fn player_bundle(
@@ -96,7 +55,7 @@ pub fn player_bundle(
     (
         spawn_pos,
         Name::new(name),
-        model::PlayerColor(color),
+        PlayerColor(color),
         TransformInterpolation,
         RigidBody::Dynamic,
         TnuaController::<PlayerControlScheme>::default(),
@@ -118,7 +77,7 @@ pub fn player_bundle(
         // Adding mass & collider so there are no problems when swapping models.
         Mass(1.0),
         Collider::capsule(0.5, 1.0),
-        model::CurrentPlayerModel(model::PlayerModelType::Donut),
+        CurrentPlayerModel(PlayerModelType::Donut),
         Player,
         FacingAngle(0.0),
     )
@@ -158,19 +117,6 @@ pub fn apply_controls(
         // Jumping
         if action_state.pressed(&PlayerActions::Jump) {
             controller.action(PlayerControlScheme::Jump(Default::default()));
-        }
-    }
-}
-
-pub fn apply_visual_rotation(
-    players: Query<(&FacingAngle, &Children), With<Player>>,
-    mut models: Query<&mut Transform, With<model::PlayerModel>>,
-) {
-    for (facing, children) in players.iter() {
-        for child in children.iter() {
-            if let Ok(mut model_transform) = models.get_mut(child) {
-                model_transform.rotation = Quat::from_rotation_y(facing.0);
-            }
         }
     }
 }

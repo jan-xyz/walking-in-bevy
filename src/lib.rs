@@ -1,1 +1,2 @@
-pub mod plugins;
+pub mod client;
+pub mod shared;

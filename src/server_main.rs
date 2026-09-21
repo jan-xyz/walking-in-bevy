@@ -1,6 +1,11 @@
 use std::{net::Ipv4Addr, net::SocketAddr, time::Duration};
 
-use bevy::{app::ScheduleRunnerPlugin, prelude::*, scene::ScenePlugin, state::app::StatesPlugin};
+use bevy::{
+    app::{PluginGroupBuilder, ScheduleRunnerPlugin},
+    prelude::*,
+    scene::ScenePlugin,
+    state::app::StatesPlugin,
+};
 
 use bevy_tnua::TnuaUserControlsSystems;
 use leafwing_input_manager::prelude::ActionState;
@@ -8,11 +13,8 @@ use lightyear::prelude::{
     server::*, Connected, ControlledBy, InterpolationTarget, LocalAddr, NetworkTarget,
     PredictionTarget, RemoteId, Replicate, ReplicationSender,
 };
-use walking_in_bevy::plugins::{
-    input::PlayerActions,
-    player::{apply_controls, player_bundle, Player, PlayerControlSchemeConfig},
-    ServerPlugin,
-};
+use walking_in_bevy::shared::player::{apply_controls, player_bundle, Player, PlayerActions};
+use walking_in_bevy::shared::{self, player::PlayerControlSchemeConfig};
 
 fn main() {
     let tick_duration = Duration::from_secs_f64(1.0 / 60.0);
@@ -36,6 +38,17 @@ fn main() {
         .add_observer(on_client_connected)
         .add_observer(on_new_client)
         .run();
+}
+
+pub struct ServerPlugin;
+
+impl PluginGroup for ServerPlugin {
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(shared::core::LevelMeshPlugin)
+            .add(shared::physics::PhysicsPlugin)
+            .add(shared::network::NetworkPlugin)
+    }
 }
 
 fn start_server(mut commands: Commands) {
