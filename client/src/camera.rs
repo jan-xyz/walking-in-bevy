@@ -19,7 +19,7 @@ impl Plugin for CameraPlugin {
 }
 
 fn add_camera_on_player_added(
-    trigger: On<Add, Player>,
+    trigger: On<Add<Player>>,
     predicted: Query<(), With<Predicted>>,
     mut commands: Commands,
     player: Query<Entity, With<FollowPlayer>>,
@@ -44,7 +44,7 @@ fn add_camera_on_player_added(
 }
 
 fn adjust_viewport_on_camera_added(
-    _trigger: On<Add, FollowPlayer>,
+    _trigger: On<Add<FollowPlayer>>,
     windows: Query<&Window>,
     mut cameras: Query<&mut Camera, With<FollowPlayer>>,
 ) {

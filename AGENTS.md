@@ -126,16 +126,14 @@ Both binaries compose a `PluginGroup` from the shared plugins plus their own cra
   functions (`apply_controls`) specifically so it can be unit tested without spinning up a Bevy `App`;
   follow this pattern for new gameplay math.
 - Bevy ECS style used throughout: observers (`add_observer`) for one-shot reactive logic on component
-  add/insert, regular systems for per-frame/per-tick logic. `On<Add, T>` / `On<Insert, T>` triggers are
+  add/insert, regular systems for per-frame/per-tick logic. `On<Add<T>>` / `On<Insert<T>>` triggers
+  (nested generics, required since Bevy 0.20) are
   used heavily instead of `Changed<T>` queries for setup-once logic.
 - `#[allow(clippy::type_complexity)]` is used on systems with large tuple `Query` types (an accepted
   pattern here) rather than restructuring the query — follow this when adding similarly complex queries.
 - Physics: colliders/mass are added on the physics root entity, not the visual model child; the visual
   model (`PlayerModel`) is purely cosmetic and reparented as a child on every model swap.
-- `#[allow(deprecated)]` appears in `shared/src/network.rs` on `NetworkPlugin::build` — lightyear's
-  leafwing input plugin config API is mid-migration; don't "fix" this by silently changing config
-  without checking lightyear's current API first.
-- Dependency updates are grouped in `.github/dependabot.yml`: all `bevy*`/`avian*`/`iyes*`/`lightyear*`
+- Dependency updates are grouped in `.github/dependabot.yml`: all `bevy*`/`avian*`/`iyes*`/`leafwing*`/`lightyear*`
   crates are bumped together as one group (monthly) since they need to stay version-compatible;
   rust-toolchain and GitHub Actions are separate monthly groups.
 - `make run` launches the server (`run: cargo run --bin server` in the `Makefile`); bare

@@ -7,7 +7,7 @@ avian3d = { version = "0.8", features = ["serialize", "enhanced-determinism"] }
 bevy = "0.20"
 bevy-tnua = "0.33"
 bevy-tnua-avian3d = "0.13"
-leafwing-input-manager = "0.21.0"
+leafwing-input-manager = "0.22.0"
 lightyear = { version = "0.31.0", features = ["avian3d", "leafwing"] }
 serde = "1.0.228"
 rand = "0.10.1"
