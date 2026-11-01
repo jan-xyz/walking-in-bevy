@@ -2,6 +2,7 @@ use std::{net::Ipv4Addr, net::SocketAddr, time::Duration};
 
 use bevy::{
     app::{PluginGroupBuilder, ScheduleRunnerPlugin},
+    ecs::error::{error, FallbackErrorHandler},
     prelude::*,
     scene::ScenePlugin,
     state::app::StatesPlugin,
@@ -35,6 +36,7 @@ fn main() {
             ServerPlugin,
         ))
         .init_asset::<Mesh>()
+        .insert_resource(FallbackErrorHandler(error))
         .add_systems(FixedUpdate, apply_controls.in_set(TnuaUserControlsSystems))
         .add_systems(Startup, start_server)
         .add_observer(on_client_connected)
@@ -61,19 +63,19 @@ fn start_server(mut commands: Commands) {
                 ..default()
             }),
             LocalAddr(SocketAddr::new(Ipv4Addr::UNSPECIFIED.into(), 5000)),
-            ServerUdpIo::default(),
+            ServerUdpIo,
         ))
         .id();
 
     commands.trigger(Start { entity });
 }
 
-fn on_new_client(trigger: On<Add, LinkOf>, mut commands: Commands) {
+fn on_new_client(trigger: On<Add<LinkOf>>, mut commands: Commands) {
     commands.entity(trigger.entity).insert(ReplicationSender);
 }
 
 fn on_client_connected(
-    trigger: On<Add, Connected>,
+    trigger: On<Add<Connected>>,
     mut commands: Commands,
     mut control_scheme_configs: ResMut<Assets<PlayerControlSchemeConfig>>,
     players: Query<(), With<Player>>,

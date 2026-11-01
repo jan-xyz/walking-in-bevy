@@ -66,7 +66,7 @@ impl PluginGroup for ClientPlugin {
 }
 
 fn on_player_added(
-    trigger: On<Add, Player>,
+    trigger: On<Add<Player>>,
     predicted: Query<(), With<Predicted>>,
     authority: Query<(), With<Controlled>>,
     mut commands: Commands,

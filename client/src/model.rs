@@ -32,7 +32,7 @@ pub fn apply_visual_rotation(
 
 #[allow(clippy::too_many_arguments)]
 fn on_player_added(
-    trigger: On<Insert, CurrentPlayerModel>,
+    trigger: On<Insert<CurrentPlayerModel>>,
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,

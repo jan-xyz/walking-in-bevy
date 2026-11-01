@@ -3,12 +3,12 @@ resolver = "2"
 members = ["client", "server", "shared"]
 
 [workspace.dependencies]
-avian3d = { version = "0.7", features = ["serialize", "enhanced-determinism"] }
-bevy = "0.19"
-bevy-tnua = "0.32"
-bevy-tnua-avian3d = "0.12"
-leafwing-input-manager = "0.21.0"
-lightyear = { version = "0.30.0", features = ["avian3d", "leafwing"] }
+avian3d = { version = "0.8", features = ["serialize", "enhanced-determinism"] }
+bevy = "0.20"
+bevy-tnua = "0.33"
+bevy-tnua-avian3d = "0.13"
+leafwing-input-manager = "0.22.0"
+lightyear = { version = "0.31.0", features = ["avian3d", "leafwing"] }
 serde = "1.0.228"
 rand = "0.10.1"
 walking-in-bevy-shared = { path = "shared" }
